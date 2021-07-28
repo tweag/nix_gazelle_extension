@@ -1,3 +1,3 @@
 {pkgs ? import ./nixpkgs {}}:
 
-pkgs.mypkgs.folks.lone-wolf
+pkgs.mypkgs.folks.we.need.to.go.deeper
