@@ -2,12 +2,18 @@ use lorri::{
     builder, cas::ContentAddressable, nix::options::NixOptions, project::Project,
     watch::WatchPathBuf, AbsPathBuf, NixFile,
 };
-use std::any::Any;
+use serde::Serialize;
 use std::env;
 use std::fs;
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use walkdir::WalkDir;
+
+#[derive(Serialize)]
+struct RuleInfo {
+    kind: String,
+    files: Vec<String>,
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -27,24 +33,35 @@ fn main() {
         .into_iter()
         .filter(|i| !i.as_ref().starts_with("/nix/store"))
         .collect::<Vec<_>>();
+
+    let mut files: Vec<String> = Vec::new();
     for (_pos, e) in v.iter().enumerate() {
-        let recursive_paths = match e {
-            WatchPathBuf::Recursive(e) => {
-                walk(&e.as_os_str().to_os_string().into_string().unwrap(), &p)
-            }
-            WatchPathBuf::Normal(e) => println!(
-                "{}",
+        match e {
+            WatchPathBuf::Recursive(e) => walk(
+                &e.as_os_str().to_os_string().into_string().unwrap(),
+                &p,
+                &mut files,
+            ),
+            WatchPathBuf::Normal(e) => files.push(
                 strip(
                     &e.as_os_str()
                         .to_os_string()
                         .into_string()
                         .unwrap()
                         .strip_prefix(&p)
-                        .unwrap()
+                        .unwrap(),
                 )
+                .to_owned(),
             ),
         };
     }
+    let rule = RuleInfo {
+        kind: "global".to_owned(),
+        files: files,
+    };
+    let j = serde_json::to_string(&rule);
+
+    println!("{}", j.unwrap());
 }
 
 fn project(name: &str, cache_dir: &AbsPathBuf) -> Project {
@@ -66,12 +83,11 @@ fn strip(s: &str) -> &str {
     chars.as_str()
 }
 
-fn walk(s: &str, p: &str) {
+fn walk(s: &str, p: &str, files: &mut Vec<String>) {
     for entry in WalkDir::new(s) {
         let entry = entry.unwrap();
         if entry.file_type().is_file() {
-            println!(
-                "{}",
+            files.push(
                 strip(
                     entry
                         .path()
@@ -80,8 +96,9 @@ fn walk(s: &str, p: &str) {
                         .into_string()
                         .unwrap()
                         .strip_prefix(&p)
-                        .unwrap()
+                        .unwrap(),
                 )
+                .to_owned(),
             );
         };
     }
