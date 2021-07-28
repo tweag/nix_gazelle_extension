@@ -1,4 +1,4 @@
 ```
-nix build
-result/bin/nix_gazelle_extension "$(pwd)examples/default.nix"
+nix-shell
+bazel run @nixscan//:bin/nixscan -- "$(pwd)/examples/folks/cool-kid/default.nix"
 ```

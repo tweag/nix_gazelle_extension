@@ -9,3 +9,4 @@ result*
 crates-io.list
 *.rustfmt
 *.swp
+bazel-*

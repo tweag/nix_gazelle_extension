@@ -35,7 +35,7 @@ rec {
   #
 
   rootCrate = rec {
-    packageId = "nix_gazelle_extension";
+    packageId = "nixscan";
 
     # Use this attribute to refer to the derivation building your root crate package.
     # You can override the features with rootCrate.build.override { features = [ "default" "feature1" ... ]; }.
@@ -51,10 +51,10 @@ rec {
   # You can override the features with
   # workspaceMembers."${crateName}".build.override { features = [ "default" "feature1" ... ]; }.
   workspaceMembers = {
-    "nix_gazelle_extension" = rec {
-      packageId = "nix_gazelle_extension";
+    "nixscan" = rec {
+      packageId = "nixscan";
       build = internal.buildRustCrateWithFeatures {
-        packageId = "nix_gazelle_extension";
+        packageId = "nixscan";
       };
 
       # Debug support which might change between releases.
@@ -1514,12 +1514,12 @@ rec {
         ];
 
       };
-      "nix_gazelle_extension" = rec {
-        crateName = "nix_gazelle_extension";
+      "nixscan" = rec {
+        crateName = "nixscan";
         version = "0.0.1";
         edition = "2018";
         crateBin = [
-          { name = "nix_gazelle_extension"; path = "src/main.rs"; }
+          { name = "nixscan"; path = "src/main.rs"; }
         ];
         src = lib.cleanSourceWith { filter = sourceFilter;  src = ./.; };
         authors = [

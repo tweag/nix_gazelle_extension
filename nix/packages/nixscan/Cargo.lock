@@ -563,7 +563,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nix_gazelle_extension"
+name = "nixscan"
 version = "0.0.1"
 dependencies = [
  "lorri",
