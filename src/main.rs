@@ -6,13 +6,19 @@ use serde::Serialize;
 use std::env;
 use std::fs;
 use std::iter::FromIterator;
+use std::path::Path;
 use std::path::PathBuf;
 use walkdir::WalkDir;
 
 #[derive(Serialize)]
-struct RuleInfo {
+struct DepSet {
     kind: String,
     files: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct DepSets {
+    depsets: Vec<DepSet>,
 }
 
 fn main() {
@@ -35,6 +41,8 @@ fn main() {
         .collect::<Vec<_>>();
 
     let mut files: Vec<String> = Vec::new();
+    let mut depset_v: Vec<DepSet> = Vec::new();
+
     for (_pos, e) in v.iter().enumerate() {
         match e {
             WatchPathBuf::Recursive(e) => walk(
@@ -55,13 +63,54 @@ fn main() {
             ),
         };
     }
-    let rule = RuleInfo {
-        kind: "global".to_owned(),
+    let recursive_depset = DepSet {
+        kind: "recursive".to_owned(),
         files: files,
     };
-    let j = serde_json::to_string(&rule);
+    depset_v.push(recursive_depset);
 
-    println!("{}", j.unwrap());
+    let project_file_path = Path::new(project_file);
+    let project_dir = if project_file_path.is_dir() {
+        project_file_path
+    } else {
+        project_file_path.parent().unwrap()
+    };
+    let mut local_files: Vec<String> = Vec::new();
+    for (_pos, e) in v.iter().enumerate() {
+        match e {
+            WatchPathBuf::Recursive(e) => walk(
+                &e.as_os_str().to_os_string().into_string().unwrap(),
+                &p,
+                &mut local_files,
+            ),
+            WatchPathBuf::Normal(e) => local_files.push(
+                strip(
+                    &e.as_os_str()
+                        .to_os_string()
+                        .into_string()
+                        .unwrap()
+                        .strip_prefix(&p)
+                        .unwrap(),
+                )
+                .to_owned(),
+            ),
+        };
+    }
+    let project_dir_prefix = project_dir.to_str().unwrap().to_string();
+    let local_pref = strip(project_dir_prefix.strip_prefix(&p).unwrap());
+    local_files.retain(|i| i.starts_with(&local_pref));
+    let direct_depset = DepSet {
+        kind: "direct".to_owned(),
+        files: local_files.to_vec(),
+    };
+
+    depset_v.push(direct_depset);
+
+    let depsets = DepSets { depsets: depset_v };
+
+    let l = serde_json::to_string(&depsets);
+
+    println!("{}", l.unwrap());
 }
 
 fn project(name: &str, cache_dir: &AbsPathBuf) -> Project {
