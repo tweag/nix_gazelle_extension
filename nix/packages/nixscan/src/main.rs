@@ -101,9 +101,13 @@ fn main() {
     let project_dir_prefix = project_dir.to_str().unwrap().to_string();
     let local_pref = strip(project_dir_prefix.strip_prefix(&p).unwrap());
     local_files.retain(|i| i.starts_with(&local_pref));
+    let stripped_local_files: Vec<_> = local_files
+        .iter()
+        .map(|x| strip(x.strip_prefix(&local_pref).unwrap()).to_string())
+        .collect();
     let direct_depset = DepSet {
         kind: "direct".to_owned(),
-        files: local_files.to_vec(),
+        files: stripped_local_files,
     };
 
     depset_v.push(direct_depset);
