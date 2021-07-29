@@ -30,6 +30,8 @@ fn main() {
         project_file,
         &lorri::AbsPathBuf::new(tempdir.path().to_owned()).unwrap(),
     );
+
+    // FIXME: compute strip prefix differently
     let p = env::current_dir().unwrap().to_str().unwrap().to_string();
 
     let output = builder::run(&project.nix_file, &project.cas, &NixOptions::empty())

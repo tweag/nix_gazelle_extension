@@ -49,7 +49,7 @@ nixpkgs_package(
         "//nix/packages/nixscan:crate-hashes.json",
         "//nix/packages/nixscan:src/main.rs",
     ],
-    repositories = { "nixpkgs": "@nixpkgs" },
+    repositories = {"nixpkgs": "@nixpkgs"},
 )
 
 http_archive(
