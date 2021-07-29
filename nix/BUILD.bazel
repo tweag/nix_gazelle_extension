@@ -1,6 +1,6 @@
 exports_files(
-  [
-    "nixpkgs-stable.nix",
-    "nixpkgs-stable.json",
-  ]
+    [
+        "nixpkgs-stable.nix",
+        "nixpkgs-stable.json",
+    ],
 )

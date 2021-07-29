@@ -1,5 +1,5 @@
 workspace(
-    name = "io_tweag_gazzele_nix",
+    name = "io_tweag_gazelle_nix",
 )
 
 load(

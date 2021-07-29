@@ -1,10 +1,30 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "gazelle_nix",
+    srcs = [
+        "lang.go",
+        "resolve.go",
+    ],
+    importpath = "github.com/tweag/nix_gazelle_extension/language/nix",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@bazel_gazelle//config:go_default_library",
+        "@bazel_gazelle//label:go_default_library",
+        "@bazel_gazelle//language:go_default_library",
+        "@bazel_gazelle//language/go:go_default_library",
+        "@bazel_gazelle//language/proto:go_default_library",
+        "@bazel_gazelle//repo:go_default_library",
+        "@bazel_gazelle//resolve:go_default_library",
+        "@bazel_gazelle//rule:go_default_library",
+        "@bazel_gazelle//walk:go_default_library",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+    ],
+)
 
 go_binary(
     name = "go_default_binary",
-    srcs = [
-        "main.go",
-    ],
+    srcs = ["main.go"],
     data = ["@nixscan//:bin/nixscan"],
     importpath = "github.com/tweag/nix_gazelle_extension/language/nix",
     visibility = ["//visibility:public"],

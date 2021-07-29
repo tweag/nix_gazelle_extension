@@ -1,0 +1,29 @@
+# BUILD.bazel
+# gazelle:exclude examples/nixpkgs
+# gazelle:exclude examples/toys
+# gazelle:exclude nix
+# gazelle:exclude language
+load(
+    "@bazel_gazelle//:def.bzl",
+    "DEFAULT_LANGUAGES",
+    "gazelle",
+    "gazelle_binary",
+)
+
+gazelle(
+    name = "gazelle",
+    data = ["@nixscan//:bin/nixscan"],
+    gazelle = "//:gazelle_binary",
+)
+
+gazelle_binary(
+    name = "gazelle_binary",
+    languages = DEFAULT_LANGUAGES + ["@io_tweag_gazelle_nix//language/nix:gazelle_nix"],
+)
+
+gazelle(
+    name = "gazelle-update",
+    command = "update",
+    data = ["@nixscan//:bin/nixscan"],
+    gazelle = "//:gazelle_binary",
+)

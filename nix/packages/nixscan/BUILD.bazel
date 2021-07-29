@@ -1,10 +1,10 @@
 exports_files(
-  [
-    "Cargo.lock",
-    "Cargo.nix",
-    "Cargo.toml",
-    "crate-hashes.json",
-    "default.nix",
-    "src/main.rs",
-  ]
+    [
+        "Cargo.lock",
+        "Cargo.nix",
+        "Cargo.toml",
+        "crate-hashes.json",
+        "default.nix",
+        "src/main.rs",
+    ],
 )
