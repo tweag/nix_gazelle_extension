@@ -91,7 +91,8 @@ fn main() {
             if visited.contains(&files[j]).not() && files[j].starts_with(&bases[i]) {
                 let file_path = &files[j].to_owned();
                 let target_path = format!(
-                    "{}{}",
+                    "{}{}{}",
+                    "//".to_string(),
                     packages[i],
                     strip(&file_path.strip_prefix(&bases[i]).unwrap().to_string()).to_owned()
                 );
