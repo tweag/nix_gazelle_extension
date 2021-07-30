@@ -78,7 +78,7 @@ load(
 nixpkgs_go_configure(repositories = {"nixpkgs": "@nixpkgs"})
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 go_rules_dependencies()
 
