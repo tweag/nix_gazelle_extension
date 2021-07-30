@@ -1,2 +1,2 @@
-def export(name = "exports", files = []):
+def export(name = "exports", files = [], deps = []):
   native.exports_files(files)

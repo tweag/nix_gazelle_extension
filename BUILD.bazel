@@ -1,3 +1,5 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
 # BUILD.bazel
 # gazelle:exclude examples/nixpkgs
 # gazelle:exclude examples/toys
@@ -26,4 +28,20 @@ gazelle(
     command = "update",
     data = ["@nixscan//:bin/nixscan"],
     gazelle = "//:gazelle_binary",
+)
+
+go_library(
+    name = "gazelle_nix",
+    srcs = ["lang.go"],
+    importpath = "",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@bazel_gazelle//config:go_default_library",
+        "@bazel_gazelle//label:go_default_library",
+        "@bazel_gazelle//language:go_default_library",
+        "@bazel_gazelle//repo:go_default_library",
+        "@bazel_gazelle//resolve:go_default_library",
+        "@bazel_gazelle//rule:go_default_library",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+    ],
 )

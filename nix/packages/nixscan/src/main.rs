@@ -6,6 +6,7 @@ use serde::Serialize;
 use std::env;
 use std::fs;
 use std::iter::FromIterator;
+use std::ops::Not;
 use std::path::Path;
 use std::path::PathBuf;
 use walkdir::WalkDir;
@@ -65,9 +66,44 @@ fn main() {
             ),
         };
     }
+
+    files.sort_by_key(|k| k.len());
+    files.reverse();
+    let defaultNixes = &files
+        .to_owned()
+        .into_iter()
+        .filter(|i| i.ends_with("default.nix"))
+        .collect::<Vec<_>>();
+    let bases: Vec<String> = defaultNixes
+        .iter()
+        .map(|x| x.strip_suffix("/default.nix").unwrap().to_string())
+        .collect();
+    let packages: Vec<String> = bases
+        .iter()
+        .map(|x| format!("{}:", x.to_string()))
+        .collect();
+
+    let mut targets: Vec<String> = Vec::new();
+    let mut visited: Vec<String> = Vec::new();
+    // FIXME
+    for i in 0..bases.len() {
+        for j in 0..files.len() {
+            if visited.contains(&files[j]).not() && files[j].starts_with(&bases[i]) {
+                let file_path = &files[j].to_owned();
+                let target_path = format!(
+                    "{}{}",
+                    packages[i],
+                    strip(&file_path.strip_prefix(&bases[i]).unwrap().to_string()).to_owned()
+                );
+                targets.push(target_path);
+                visited.push(file_path.to_string());
+            };
+        }
+    }
+
     let recursive_depset = DepSet {
         kind: "recursive".to_owned(),
-        files: files,
+        files: targets,
     };
     depset_v.push(recursive_depset);
 
