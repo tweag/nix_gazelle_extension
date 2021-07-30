@@ -27,6 +27,10 @@ gazelle(
     name = "gazelle-update",
     command = "update",
     data = ["@nixscan//:bin/nixscan"],
+    extra_args = [
+        "-lang",
+        "gazelle_nix",
+    ],
     gazelle = "//:gazelle_binary",
 )
 
