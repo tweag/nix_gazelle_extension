@@ -1,31 +1,31 @@
 package gazelle_nix
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"go/build"
-	"encoding/json"
 	"log"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 
-        "os"
-        "os/exec"
+	"os"
+	"os/exec"
 
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/language"
+	golang "github.com/bazelbuild/bazel-gazelle/language/go"
+	"github.com/bazelbuild/bazel-gazelle/language/proto"
 	"github.com/bazelbuild/bazel-gazelle/repo"
 	"github.com/bazelbuild/bazel-gazelle/resolve"
 	"github.com/bazelbuild/bazel-gazelle/rule"
+	"github.com/bazelbuild/bazel-gazelle/walk"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 )
 
-const (
-	nixName = "nix"
-)
+const nixName = "gazelle_nix"
 
 var _ = fmt.Printf
 
@@ -37,11 +37,6 @@ func NewLanguage() language.Language {
 
 func (cl *nixLang) Name() string { return nixName }
 
-type Lang struct {
-	config.CommonConfigurer
-	resolver
-}
-
 // Kinds returns a map of maps rule names (kinds) and information on how to
 // match and merge attributes that may be found in rules of those kinds. All
 // kinds of rules generated for this language may be found here.
@@ -49,8 +44,9 @@ func (l *nixLang) Kinds() map[string]rule.KindInfo {
 	return map[string]rule.KindInfo{
 		"export": {
 			MatchAny:   false,
-			MatchAttrs: []string{"files", "deps"},
+			MatchAttrs: []string{"files"},
 		},
+		"nixpkgs_package": {},
 	}
 }
 
@@ -84,6 +80,7 @@ func (l *nixLang) Loads() []rule.LoadInfo {
 // log.Print.
 func (l *nixLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
 	nixFiles := make(map[string]string)
+	nixNames := make(map[string]string)
 	nixFilesDeps := make(map[string]*DepSets)
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 		if !strings.HasSuffix(f, "default.nix") {
@@ -100,21 +97,22 @@ func (l *nixLang) GenerateRules(args language.GenerateArgs) language.GenerateRes
 		}
 
 		nixFiles[f] = pth
+		nixNames[f] = args.Rel
 		nixFilesDeps[f] = nixFileDep
 	}
-
-	//implicitPkgName := path.Base(args.Rel)
 
 	libraries := make(map[string]*nixLibrary)
 
 	for nixFile := range nixFiles {
 		fileDeps := nixFilesDeps[nixFile]
 		lib := libraries[nixFile]
-		tgtName := "direct"
+		pkgName := strings.Replace(nixNames[nixFile], "/", ".", -1)
+		tgtName := "//" + nixNames[nixFile] + ":default.nix"
 		lib = &nixLibrary{
-			Name:      tgtName,
-			Deps:      fileDeps.DepSets[0].Files,
-			Files:     fileDeps.DepSets[1].Files,
+			Name:    pkgName,
+			NixFile: tgtName,
+			Files:   fileDeps.DepSets[1].Files,
+			Deps:    fileDeps.DepSets[0].Files,
 		}
 		libraries[nixFile] = lib
 	}
@@ -133,13 +131,15 @@ func (l *nixLang) GenerateRules(args language.GenerateArgs) language.GenerateRes
 }
 
 type nixLibrary struct {
-	Name   string
-        Deps   []string
-	Files  []string
+	Name    string
+	NixFile string
+	Files   []string
+	Deps    []string
 }
 
 func (cl *nixLibrary) ToRule() *rule.Rule {
 	rule := rule.NewRule("export", cl.Name)
+	rule.SetAttr("nix_file", cl.NixFile)
 	sort.Strings(cl.Files)
 	rule.SetAttr("files", cl.Files)
 	rule.SetAttr("deps", cl.Deps)
@@ -175,12 +175,10 @@ func (l *nixLang) Fix(c *config.Config, f *rule.File) {
 	fixGazelle(c, f)
 }
 
-// CheckFlags validates the configuration after command line flags are
-// parsed.  This is called once with the root configuration when
-// Gazelle starts.  CheckFlags may set default values in flags or make
-// implied changes.
-func (s *nixLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
-	return nil
+func (*nixLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error { return nil }
+
+type Config struct {
+	NixRepositories map[string]string
 }
 
 // Configure modifies the configuration using directives and other
@@ -195,36 +193,43 @@ func (s *nixLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
 //
 // f is the build file for the current directory or nil if there is no
 // existing build file.
-func (s *nixLang) Configure(c *config.Config, rel string, f *rule.File) {
-	var conf *nixConfig
-	if raw, ok := c.Exts[nixName]; !ok {
-		conf = &nixConfig{}
+
+func (*nixLang) Configure(c *config.Config, rel string, f *rule.File) {
+	if f == nil {
+		return
+	}
+
+	m, ok := c.Exts[nixName]
+	var extraConfig Config
+	if ok {
+		extraConfig = m.(Config)
 	} else {
-		tmp := *(raw.(*nixConfig))
-		conf = &tmp
-	}
-	c.Exts[nixName] = conf
-
-	// We follow the same pattern as the go language to allow
-	// vendoring of nix repositories.
-	if path.Base(rel) == "vendor" {
-		conf.prefix = ""
-		conf.prefixRel = rel
-	}
-
-	if f != nil {
-		for _, d := range f.Directives {
-			switch d.Key {
-			case "prefix":
-				if err := checkPrefix(d.Value); err != nil {
-					log.Print(err)
-					return
-				}
-				conf.prefix = d.Value
-				conf.prefixRel = rel
-				return
-			}
+		extraConfig = Config{
+			NixRepositories: make(map[string]string),
 		}
+	}
+	for _, directive := range f.Directives {
+		switch directive.Key {
+		case "nix_repositories":
+			parseNixRepositories(&extraConfig, directive.Value)
+		}
+	}
+	c.Exts[nixName] = extraConfig
+}
+
+func parseNixRepositories(config *Config, value string) {
+	r := strings.Split(value, " ")
+	kv := make([]string, 0, len(r)*2)
+	for _, key := range r {
+		kv = append(kv, strings.Split(key, "=")...)
+	}
+	if len(kv)%2 != 0 {
+		msg := "Can't parse value of nix_repositories: %s"
+		err := fmt.Errorf(msg, value)
+		log.Fatal(err)
+	}
+	for i := 0; i < len(kv); i += 2 {
+		(*config).NixRepositories[kv[i]] = kv[i+1]
 	}
 }
 
@@ -234,13 +239,6 @@ func (s *nixLang) Configure(c *config.Config, rel string, f *rule.File) {
 // embedding rule will inherit the imports of the embedded rule.
 func (cl *nixLang) Embeds(r *rule.Rule, from label.Label) []label.Label {
 	return nil
-}
-
-type nixConfig struct {
-	// prefix is a prefix of an import path, used to generate importpath
-	// attributes. Set with -go_prefix or # gazelle:prefix.
-	prefix    string
-	prefixRel string
 }
 
 // checkPrefix checks that a string may be used as a prefix. We forbid local
@@ -260,23 +258,31 @@ func checkPrefix(prefix string) error {
 // slice is returned, including an empty slice, the rule will be
 // indexed.
 func (cl *nixLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
-	return nil
+
+	var prefix string
+	switch r.Kind() {
+	case "export":
+		prefix = "exports:"
+	case "nixpkgs_package":
+		prefix = "nixpkgs_package:"
+	}
+	return []resolve.ImportSpec{resolve.ImportSpec{nixName, prefix + r.Name()}}
 }
 
 // KnownDirectives returns a list of directive keys that this
 // Configurer can interpret. Gazelle prints errors for directives that
 // are not recoginized by any Configurer.
-func (s *nixLang) KnownDirectives() []string {
-	return []string{"prefix"}
+func (*nixLang) KnownDirectives() []string {
+	return []string{
+		"nix_repositories",
+	}
 }
 
 // RegisterFlags registers command-line flags used by the
 // extension. This method is called once with the root configuration
 // when Gazelle starts. RegisterFlags may set an initial values in
 // Config.Exts. When flags are set, they should modify these values.
-func (s *nixLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config) {
-	c.Exts[nixName] = &nixConfig{}
-}
+func (s *nixLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config) {}
 
 // Resolve translates imported libraries for a given rule into Bazel
 // dependencies. A list of imported libraries is typically stored in a
@@ -286,8 +292,31 @@ func (s *nixLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config) 
 // equivalent) for each import according to language-specific rules
 // and heuristics.
 func (cl *nixLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.RemoteCache, r *rule.Rule, importsRaw interface{}, from label.Label) {
-	if importsRaw == nil {
-		return
+}
+
+type nixWorkspaceLibrary struct {
+	Name         string
+	NixFile      string
+	NixFileDeps  []string
+	Repositories map[string]string
+}
+
+func (lang *nixLang) UpdateRepos(args language.UpdateReposArgs) language.UpdateReposResult {
+	packageList := collectDependenciesFromRepo(args.Config, lang)
+	nixRepositoriesConf := args.Config.Exts[nixName].(Config).NixRepositories
+
+	theRules := make([]*rule.Rule, len(packageList))
+	for i, pkg := range packageList {
+		r := rule.NewRule("nixpkgs_package", pkg.Name)
+		r.SetAttr("nix_file", pkg.NixFile)
+		r.SetAttr("nix_file_deps", pkg.NixFileDeps)
+		r.SetAttr("repositories", nixRepositoriesConf)
+		r.AddComment("# autogenerated")
+		theRules[i] = r
+	}
+
+	return language.UpdateReposResult{
+		Gen: theRules,
 	}
 }
 
@@ -316,9 +345,80 @@ func nixToDepSets(nixFile string) (*DepSets, error) {
 	if err != nil {
 		log.Printf("Incorrect json: %s\n", out)
 		log.Fatal(err)
-                return nil, err
+		return nil, err
 	}
-	//fmt.Printf("%+v\n", depSets)
 	return &depSets, nil
 }
 
+func collectDependenciesFromRepo(
+	c *config.Config,
+	lang language.Language,
+) []nixWorkspaceLibrary {
+
+	packages := make([]nixWorkspaceLibrary, 0)
+	cexts := []config.Configurer{
+		&config.CommonConfigurer{},
+		&walk.Configurer{},
+		lang,
+		golang.NewLanguage(),
+		proto.NewLanguage(),
+	}
+
+	initUpdateReposConfig(c, cexts)
+
+	walk.Walk(
+		c,
+		cexts,
+		[]string{},
+		walk.VisitAllUpdateDirsMode,
+		func(
+			dir,
+			rel string,
+			c *config.Config,
+			update bool,
+			f *rule.File,
+			subdirs,
+			regularFiles,
+			genFiles []string,
+		) {
+			collectDependenciesFromFile(f, c, &packages)
+		},
+	)
+	return packages
+}
+
+func collectDependenciesFromFile(
+	f *rule.File,
+	c *config.Config,
+	packages *[]nixWorkspaceLibrary,
+) {
+	if f == nil {
+		return
+	}
+
+	for _, r := range f.Rules {
+		if r.Kind() == "export" {
+			pkg := nixWorkspaceLibrary{
+				Name:        r.AttrString("name"),
+				NixFile:     r.AttrString("nix_file"),
+				NixFileDeps: r.AttrStrings("deps"),
+			}
+			*packages = append(*packages, pkg)
+
+		}
+	}
+}
+
+func initUpdateReposConfig(c *config.Config, cexts []config.Configurer) {
+	fs := flag.NewFlagSet("updateReposFlagSet", flag.ContinueOnError)
+
+	for _, cext := range cexts {
+		cext.RegisterFlags(fs, "update", c)
+	}
+
+	for _, cext := range cexts {
+		if err := cext.CheckFlags(fs, c); err != nil {
+			log.Fatal(err)
+		}
+	}
+}

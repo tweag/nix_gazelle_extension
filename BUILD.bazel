@@ -5,6 +5,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 # gazelle:exclude examples/toys
 # gazelle:exclude nix
 # gazelle:exclude language
+# gazelle:nix_repositories nixpkgs=@nixpkgs
 load(
     "@bazel_gazelle//:def.bzl",
     "DEFAULT_LANGUAGES",
@@ -30,6 +31,18 @@ gazelle(
     extra_args = [
         "-lang",
         "gazelle_nix",
+    ],
+    gazelle = "//:gazelle_binary",
+)
+
+gazelle(
+    name = "gazelle-update-repos",
+    command = "update-repos",
+    data = ["@nixscan//:bin/nixscan"],
+    extra_args = [
+        "-lang",
+        "gazelle_nix",
+        "any",
     ],
     gazelle = "//:gazelle_binary",
 )
