@@ -38,16 +38,17 @@ nixpkgs_local_repository(
 )
 
 nixpkgs_package(
-    name = "nixscan",
-    nix_file = "//nix/packages/nixscan:default.nix",
+    name = "scan_nix",
+    nix_file = "//nix/packages/scan_nix:default.nix",
     nix_file_deps = [
         "//nix:nixpkgs-stable.nix",
         "//nix:nixpkgs-stable.json",
-        "//nix/packages/nixscan:Cargo.lock",
-        "//nix/packages/nixscan:Cargo.nix",
-        "//nix/packages/nixscan:Cargo.toml",
-        "//nix/packages/nixscan:crate-hashes.json",
-        "//nix/packages/nixscan:src/main.rs",
+        "//nix/packages/scan_nix:Cargo.lock",
+        "//nix/packages/scan_nix:Cargo.toml",
+        "//nix/packages/scan_nix:runtime-closure.nix.template",
+        "//nix/packages/scan_nix:runtime.nix",
+        "//nix/packages/scan_nix:default.nix",
+        "//nix/packages/scan_nix:src/main.rs",
     ],
     repositories = {"nixpkgs": "@nixpkgs"},
 )
