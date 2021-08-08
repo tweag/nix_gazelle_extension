@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use std::env;
+use std::path::{Path, PathBuf};
 
 use lorri::watch::WatchPathBuf;
 use lorri::AbsPathBuf;
@@ -149,8 +150,9 @@ fn _to_list_of_direct_bzl_deps(
   project: &lorri::project::Project,
   file_paths: Vec<AbsPathBuf>,
 ) -> Result<Vec<String>, ScanError> {
-  let nix_project = _get_nix_project_path(project)?;
-  let nix_project_path = nix_project.as_absolute_path();
+  let parsed_file = &env::var("NIX_FILE").unwrap().to_owned();
+  let nix_project_file = Path::new(parsed_file).to_path_buf();
+  let nix_project_path = nix_project_file.parent().unwrap();
 
   Ok(
     file_paths

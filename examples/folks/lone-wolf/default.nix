@@ -1,4 +1,4 @@
-{pkgs ? import ../../nixpkgs {}}:
+{pkgs}:
 
 pkgs.stdenv.mkDerivation rec {
   name = "lone-wolf";

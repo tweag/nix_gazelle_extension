@@ -56,7 +56,7 @@ func (l *nixLang) Kinds() map[string]rule.KindInfo {
 func (l *nixLang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
-			Name: "//tools:exporter.bzl",
+			Name: "@io_tweag_gazelle_nix//tools:exporter.bzl",
 			Symbols: []string{
 				"export",
 			},
@@ -332,9 +332,11 @@ type DepSet struct {
 const NIX2BUILD_PATH = "external/scan_nix/bin/scan-nix"
 
 func nixToDepSets(nixFile string) (*DepSets, error) {
+        wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 	scan_nix, err := bazel.Runfile(NIX2BUILD_PATH)
-	cmd := exec.Command(scan_nix, nixFile)
-	cmd.Dir = os.Getenv("BUILD_WORKSPACE_DIRECTORY")
+	cmd := exec.Command(scan_nix, wsroot + "/default.nix")
+        cmd.Env = append(cmd.Env, "NIX_FILE="+nixFile)        
+	cmd.Dir = wsroot
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("%s", out)

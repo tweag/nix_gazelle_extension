@@ -1,10 +1,11 @@
-workspace(
-    name = "io_tweag_gazelle_nix",
-)
+workspace(name = "gazelle_nix_example")
 
-load(
-    "@bazel_tools//tools/build_defs/repo:http.bzl",
-    "http_archive",
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+
+local_repository(
+    name = "io_tweag_gazelle_nix",
+    path = "..",
 )
 
 RULES_TWEAG_COMMIT = "a388ab60dea07c3fc182453e89ff1a67c9d3eba6"
@@ -23,7 +24,21 @@ load(
 
 rules_nixpkgs_dependencies()
 
-load ("//:defs.bzl", "gazelle_nix_dependencies")
+load(
+    "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
+    "nixpkgs_local_repository",
+    "nixpkgs_package",
+)
+
+nixpkgs_local_repository(
+    name = "nixpkgs",
+    nix_file = "//nix/nixpkgs:default.nix",
+    nix_file_deps = [
+        "//nix/nixpkgs:flake.lock",
+    ],
+)
+
+load("@io_tweag_gazelle_nix//:defs.bzl", "gazelle_nix_dependencies")
 gazelle_nix_dependencies()
 
 ###############
