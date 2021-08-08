@@ -19,11 +19,11 @@ type DepSet struct {
 	Files []string
 }
 
-const NIX2BUILD_PATH = "external/nixscan/bin/nixscan"
+const NIX2BUILD_PATH = "external/scan_nix/bin/scan-nix"
 
 func nixToDepSets(nixFile string) DepSets {
-	nixscan, err := bazel.Runfile(NIX2BUILD_PATH)
-	cmd := exec.Command(nixscan, nixFile)
+	scan_nix, err := bazel.Runfile(NIX2BUILD_PATH)
+	cmd := exec.Command(scan_nix, nixFile)
 	cmd.Dir = os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 	out, err := cmd.CombinedOutput()
 	if err != nil {

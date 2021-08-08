@@ -1,0 +1,8 @@
+exports_files([
+    "Cargo.lock",
+    "Cargo.toml",
+    "runtime-closure.nix.template",
+    "runtime.nix",
+    "default.nix",
+    "src/main.rs",
+])
