@@ -1,4 +1,4 @@
-{pkgs ? import ../../../../../../nixpkgs {}}:
+{pkgs, mypkgs}:
 
 pkgs.stdenv.mkDerivation rec {
   name = "42";
@@ -8,7 +8,7 @@ pkgs.stdenv.mkDerivation rec {
     mkdir $out
     cp $src/truth.source $out/truth.bin
   '';
-  buildInputs = with pkgs.mypkgs.folks; [
+  buildInputs = with mypkgs.folks; [
     the-one-all-know
     cool-kid
     lone-wolf 
