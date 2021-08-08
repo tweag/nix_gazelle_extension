@@ -247,12 +247,12 @@ fn _scan() -> Result<(), ScanError> {
   let all_deps = DepSets {
     depsets: vec![
       DepSet {
-        kind: "direct".to_string(),
-        files: _to_list_of_direct_bzl_deps(&project, project_children)?,
-      },
-      DepSet {
         kind: "recursive".to_string(),
         files: _to_list_of_bzl_deps(project_deps)?,
+      },
+      DepSet {
+        kind: "direct".to_string(),
+        files: _to_list_of_direct_bzl_deps(&project, project_children)?,
       },
     ],
   };
