@@ -175,6 +175,20 @@ fn _get_workspace_root_path() -> Result<AbsPathBuf, ScanError> {
   Ok(path)
 }
 
+fn _to_bazel_package_target(path: &std::path::Path) -> Option<String> {
+  match path.file_name() {
+    Some(target) => {
+      let package = path.ancestors().into_iter().filter_map(|p|{ match p.to_str() {
+        Some(pth) => Some(String::from(pth)),
+        None => None,
+      }}).collect::<Vec<String>>().join("/");
+
+      Some(format!("//{}:{}", &package[..package.len()-1], target.to_str()?))
+    },
+    None => None,
+  }
+}
+
 fn _to_list_of_bzl_deps(
   file_paths: Vec<AbsPathBuf>,
 ) -> Result<Vec<String>, ScanError> {
@@ -186,10 +200,7 @@ fn _to_list_of_bzl_deps(
       .into_iter()
       .filter_map(|path| {
         match path.as_absolute_path().strip_prefix(workspace_root_path) {
-          Ok(pth) => match pth.to_str() {
-            Some(p) => Some(format!("//{}", String::from(p))),
-            None => None,
-          },
+          Ok(pth) => _to_bazel_package_target(pth),
           _ => None,
         }
       })
