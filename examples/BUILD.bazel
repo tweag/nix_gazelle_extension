@@ -42,3 +42,6 @@ gazelle(
     ],
     gazelle = "//:gazelle_binary",
 )
+
+# export prelude
+exports_files(["default.nix"])
