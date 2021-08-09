@@ -1,0 +1,42 @@
+diff --git a/tools/jdk/default_java_toolchain.bzl b/tools/jdk/default_java_toolchain.bzl
+index d1f3a43df4..2dfda5a63a 100644
+--- a/tools/jdk/default_java_toolchain.bzl
++++ b/tools/jdk/default_java_toolchain.bzl
+@@ -42,8 +42,8 @@ BASE_JDK9_JVM_OPTS = [
+ 
+ JDK9_JVM_OPTS = BASE_JDK9_JVM_OPTS + [
+     # override the javac in the JDK.
+-    "--patch-module=java.compiler=$(location @remote_java_tools//:java_compiler_jar)",
+-    "--patch-module=jdk.compiler=$(location @remote_java_tools//:jdk_compiler_jar)",
++    # "--patch-module=java.compiler=$(location @remote_java_tools//:java_compiler_jar)",
++    # "--patch-module=jdk.compiler=$(location @remote_java_tools//:jdk_compiler_jar)",
+ ]
+ 
+ DEFAULT_JAVACOPTS = [
+@@ -87,7 +87,7 @@ DEFAULT_TOOLCHAIN_CONFIGURATION = dict(
+     ] + JDK9_JVM_OPTS,
+     turbine_jvm_opts = [
+         # Turbine is not a worker and parallel GC is faster for short-lived programs.
+-        "-XX:+UseParallelOldGC",
++        # "-XX:+UseParallelOldGC",
+     ],
+     tools = [
+         "@remote_java_tools//:java_compiler_jar",
+@@ -126,7 +126,7 @@ PREBUILT_TOOLCHAIN_CONFIGURATION = dict(
+     ] + JDK9_JVM_OPTS,
+     turbine_jvm_opts = [
+         # Turbine is not a worker and parallel GC is faster for short-lived programs.
+-        "-XX:+UseParallelOldGC",
++        # "-XX:+UseParallelOldGC",
+     ],
+     tools = [
+         "@remote_java_tools//:java_compiler_jar",
+@@ -145,7 +145,7 @@ NONPREBUILT_TOOLCHAIN_CONFIGURATION = dict(
+     ] + JDK9_JVM_OPTS,
+     turbine_jvm_opts = [
+         # Turbine is not a worker and parallel GC is faster for short-lived programs.
+-        "-XX:+UseParallelOldGC",
++        # "-XX:+UseParallelOldGC",
+     ],
+     tools = [
+         "@remote_java_tools//:java_compiler_jar",
