@@ -1,4 +1,4 @@
-{pkgs, mypkgs}:
+{ pkgs, mypkgs }:
 
 pkgs.stdenv.mkDerivation rec {
   name = "the-one-all-know";

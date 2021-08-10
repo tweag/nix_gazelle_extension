@@ -1,8 +1,5 @@
-{
-  system ? builtins.currentSystem
-  , pkgs ? import <nixpkgs> { inherit system; }
-  , ...
-}:
+{ system ? builtins.currentSystem, pkgs ? import <nixpkgs> { inherit system; }
+, ... }:
 
 pkgs.rustPlatform.buildRustPackage {
   pname = "scan-nix";

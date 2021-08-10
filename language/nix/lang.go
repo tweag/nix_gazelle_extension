@@ -116,7 +116,7 @@ func (l *nixLang) GenerateRules(args language.GenerateArgs) language.GenerateRes
 			NixFile: nix_prelude,
 			Files:   fileDeps.DepSets[1].Files,
 			Deps:    fileDeps.DepSets[0].Files,
-                        NixOpts: []string{"--argstr", "nix_file", tgtName,},
+			NixOpts: []string{"--argstr", "nix_file", tgtName},
 		}
 		libraries[nixFile] = lib
 	}
@@ -139,7 +139,7 @@ type nixLibrary struct {
 	NixFile string
 	Files   []string
 	Deps    []string
-        NixOpts []string
+	NixOpts []string
 }
 
 func (cl *nixLibrary) ToRule() *rule.Rule {
@@ -340,11 +340,11 @@ type DepSet struct {
 const NIX2BUILD_PATH = "external/scan_nix/bin/scan-nix"
 
 func nixToDepSets(nixFile string) (*DepSets, error) {
-        wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
+	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 	scan_nix, err := bazel.Runfile(NIX2BUILD_PATH)
-	cmd := exec.Command(scan_nix, wsroot + "/default.nix")
-        cmd.Env = os.Environ()
-        cmd.Env = append(cmd.Env, "NIX_FILE="+nixFile)
+	cmd := exec.Command(scan_nix, wsroot+"/default.nix")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "NIX_FILE="+nixFile)
 	cmd.Dir = wsroot
 	out, err := cmd.CombinedOutput()
 	if err != nil {

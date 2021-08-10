@@ -12,8 +12,7 @@ let
         --output build \
     | ${python3}/bin/python3 ${./update-srcDeps.py}
   '';
-in
-mkShell {
+in mkShell {
   name = "bazel-env";
 
   buildInputs = [ python3 bazel ];

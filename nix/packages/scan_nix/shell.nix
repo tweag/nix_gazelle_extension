@@ -1,8 +1,5 @@
-{
-  system ? builtins.currentSystem
-  , pkgs ? import <nixpkgs> { inherit system; }
-  , ...
-}:
+{ system ? builtins.currentSystem, pkgs ? import <nixpkgs> { inherit system; }
+, ... }:
 
 pkgs.mkShell {
   name = "scan-nix-dev-shell";
@@ -10,7 +7,7 @@ pkgs.mkShell {
 
   # Lorri requirements
   BUILD_REV_COUNT = 1;
-  RUN_TIME_CLOSURE = pkgs.callPackage ./runtime.nix {};
+  RUN_TIME_CLOSURE = pkgs.callPackage ./runtime.nix { };
 
   shellHook = ''
     export TERM=xterm

@@ -1,4 +1,4 @@
-{pkgs, mypkgs}:
+{ pkgs, mypkgs }:
 
 pkgs.stdenv.mkDerivation rec {
   name = "42";
@@ -8,9 +8,5 @@ pkgs.stdenv.mkDerivation rec {
     mkdir -p $out/bin
     cp $src/truth.source $out/bin/truth.bin
   '';
-  buildInputs = with mypkgs.folks; [
-    the-one-all-know
-    cool-kid
-    lone-wolf 
-  ];
+  buildInputs = with mypkgs.folks; [ the-one-all-know cool-kid lone-wolf ];
 }
