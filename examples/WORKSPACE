@@ -2,7 +2,6 @@ workspace(name = "gazelle_nix_example")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-
 local_repository(
     name = "io_tweag_gazelle_nix",
     path = "..",
@@ -38,7 +37,12 @@ nixpkgs_local_repository(
     ],
 )
 
+load("@io_tweag_gazelle_nix//:defs.bzl", "io_tweag_gazelle_nix_repositories")
+
+io_tweag_gazelle_nix_repositories()
+
 load("@io_tweag_gazelle_nix//:defs.bzl", "gazelle_nix_dependencies")
+
 gazelle_nix_dependencies()
 
 ###############
@@ -60,7 +64,9 @@ load(
 )
 
 nixpkgs_go_configure(repository = "@nixpkgs")
+
 load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
+
 go_rules_dependencies()
 
 ####################
@@ -77,4 +83,5 @@ http_archive(
 )
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+
 gazelle_dependencies()
