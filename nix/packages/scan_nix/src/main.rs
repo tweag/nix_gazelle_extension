@@ -177,22 +177,51 @@ fn _get_workspace_root_path() -> Result<AbsPathBuf, ScanError> {
   Ok(path)
 }
 
-fn _to_bazel_package_target(path: &std::path::Path) -> Option<String> {
+fn _to_bazel_label(path: &std::path::Path, bazel_packages: &std::collections::HashSet<String>) -> Option<String> {
   match path.file_name() {
-    Some(target) => {
-      let package = path.ancestors().into_iter().filter_map(|p|{ match p.to_str() {
-        Some(pth) => Some(String::from(pth)),
-        None => None,
-      }}).collect::<Vec<String>>().join("/");
+    Some(target_raw) => {
+      let file = target_raw.to_str()?;
+      let mut package: String = "".to_string();
 
-      Some(format!("//{}:{}", &package[..package.len()-1], target.to_str()?))
-    },
+      let mut path_ancestors = path.ancestors().into_iter().collect::<Vec<&Path>>();
+      path_ancestors.reverse();
+
+      for pth in path_ancestors.clone() {
+        let sub_path = pth.to_str()?;
+        if !bazel_packages.contains(sub_path) {
+          continue;
+        }
+
+        package = String::from(sub_path);
+        break;
+      }
+
+      let mut target: String = path_ancestors
+        .last()?
+        .to_str()?
+        .replace(file, "")
+        .replace(&package, "");
+
+      match target.find("/") {
+        Some(i) => {
+          target.replace_range(i..(i+1), "");
+        },
+        None => (),
+      }
+
+      if package.is_empty() {
+        Some(format!("//:{}", file))
+      } else {
+        Some(format!("//{}:{}{}", package, target, file))
+      }
+    }
     None => None,
   }
 }
 
 fn _to_list_of_bzl_deps(
   file_paths: Vec<AbsPathBuf>,
+  bazel_packages: &std::collections::HashSet<String>
 ) -> Result<Vec<String>, ScanError> {
   let workspace_root = _get_workspace_root_path()?;
   let workspace_root_path = workspace_root.as_absolute_path();
@@ -202,7 +231,7 @@ fn _to_list_of_bzl_deps(
       .into_iter()
       .filter_map(|path| {
         match path.as_absolute_path().strip_prefix(workspace_root_path) {
-          Ok(pth) => _to_bazel_package_target(pth),
+          Ok(pth) => _to_bazel_label(pth, bazel_packages),
           _ => None,
         }
       })
@@ -256,12 +285,38 @@ fn _scan() -> Result<(), ScanError> {
   // Every children is also a project dep
   project_deps.extend(project_children.clone());
 
+
+  let workspace_root = _get_workspace_root_path()?;
+  let workspace_root_path = workspace_root.as_absolute_path();
+  let bazel_packages = project_deps.clone().into_iter().filter_map(|pth|{
+    match pth.as_absolute_path().strip_prefix(workspace_root_path) {
+      Ok(ppth) => { 
+        match ppth.to_str() {
+          Some(p) => {
+            if p.contains("default.nix") {
+              let package = String::from(p).replace("default.nix", "");
+              if !package.is_empty() {
+                Some(String::from(&package[..package.len()-1]))
+              } else {
+                None
+              }
+            } else {
+              None
+            }
+          },
+          _ => None,
+        }
+      },
+      Err(_) => None,
+    }
+  }).collect::<std::collections::HashSet<String>>();
+
   // TODO: Better naming
   let all_deps = DepSets {
     depsets: vec![
       DepSet {
         kind: "recursive".to_string(),
-        files: _to_list_of_bzl_deps(project_deps)?,
+        files: _to_list_of_bzl_deps(project_deps, &bazel_packages)?,
       },
       DepSet {
         kind: "direct".to_string(),
@@ -280,5 +335,37 @@ fn main() {
   match _scan() {
     Ok(_) => (),
     Err(error) => println!("{:?}", error),
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use rstest::rstest;
+
+  #[rstest]
+  #[case("z", "//:z")]
+  #[case("a/b", "//a:b")]
+  #[case("c/d/e", "//c/d:e")]
+  #[case("f/g/h/i", "//f/g/h:i")]
+  #[case("j/k/l/m", "//j/k:l/m")]
+  #[case("n/o/p/r/s/q", "//n/o/p:r/s/q")]
+  fn test_to_bazel_label(
+    #[case] input: String,
+    #[case] expected_bzl_lbl: String,
+  ) {
+    let bazel_packages: std::collections::HashSet<String> = vec![
+      "a".to_string(),
+      "c/d".to_string(), 
+      "f/g/h".to_string(),
+      "j/k".to_string(),
+      "n/o/p".to_string(),
+    ].into_iter().collect();
+    let input_path = std::path::Path::new(&input);
+
+    match _to_bazel_label(input_path, &bazel_packages) {
+      Some(bazel_label) => assert_eq!(expected_bzl_lbl, bazel_label),
+      _ => assert!(false),
+    }
   }
 }

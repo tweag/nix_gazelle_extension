@@ -15,7 +15,7 @@ pkgs.rustPlatform.buildRustPackage {
 
   # For updating the hash
   #cargoHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-  cargoHash = "sha256-GMo8tlo2tf7VFTfxhOE68yrhioh/wpJfFH6hSu0WwbY=";
+  cargoHash = "sha256-o2FXqrfko4zZNvsjr/KGSSIOaXtArUABaWyNI6IP8k0=";
 
   BUILD_REV_COUNT = 1;
   RUN_TIME_CLOSURE = pkgs.callPackage ./runtime.nix { };
