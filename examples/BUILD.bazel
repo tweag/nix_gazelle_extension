@@ -1,5 +1,6 @@
 # BUILD.bazel
 # gazelle:exclude nix
+# gazelle:exclude 3rdparty
 # gazelle:exclude default.nix
 # gazelle:nix_repositories nixpkgs=@nixpkgs
 load(
