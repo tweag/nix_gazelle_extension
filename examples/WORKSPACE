@@ -32,18 +32,15 @@ load(
 nixpkgs_local_repository(
     name = "nixpkgs",
     nix_file = "//nix/nixpkgs:default.nix",
-    nix_file_deps = [
-        "//nix/nixpkgs:flake.lock",
-    ],
 )
 
-load("@io_tweag_gazelle_nix//:defs.bzl", "io_tweag_gazelle_nix_repositories")
+load("@io_tweag_gazelle_nix//:repositories.bzl", "io_tweag_gazelle_nix_repositories")
 
 io_tweag_gazelle_nix_repositories()
 
-load("@io_tweag_gazelle_nix//:defs.bzl", "gazelle_nix_dependencies")
+load("@io_tweag_gazelle_nix//:defs.bzl", "io_tweag_gazelle_nix_packages")
 
-gazelle_nix_dependencies()
+io_tweag_gazelle_nix_packages(nixpkgs = "@nixpkgs")
 
 ###############
 # Go preamble

@@ -1,6 +1,5 @@
 exports_files(
     [
         "default.nix",
-        "flake.lock",
     ],
 )

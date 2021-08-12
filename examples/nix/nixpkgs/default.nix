@@ -1,16 +1,13 @@
 { system ? builtins.currentSystem, ... }:
-let
-  flakes_spec = builtins.fromJSON (builtins.readFile ./flake.lock);
-  nixpkgs_spec = flakes_spec.nodes.pkgs.locked;
-  nixpkgs_src = builtins.fetchTarball {
-    url =
-      "https://github.com/${nixpkgs_spec.owner}/${nixpkgs_spec.repo}/archive/${nixpkgs_spec.rev}.tar.gz";
-    sha256 =
-      (builtins.replaceStrings [ "sha256-" ] [ "" ] nixpkgs_spec.narHash);
-  };
+import (builtins.fetchTarball {
+  name = "nixos-21.05-2021-08-12";
+  # URL obtained from https://status.nixos.org/
+  url =
+    "https://github.com/NixOS/nixpkgs/archive/927ce1afc1db40869a463a37ea2738c27d425f80.tar.gz";
+  # Hash obtained using `nix-prefetch-url --unpack <url>`
+  sha256 = "1f64kkjk0ba9hzf086nkvk04wkfgjgzlkjpg49nrj3ar0chvzkrb";
+}) {
+  inherit system;
+  config.allowUnfree = true;
+}
 
-  nixpkgs = import nixpkgs_src {
-    inherit system;
-    config.allowUnfree = true;
-  };
-in nixpkgs
