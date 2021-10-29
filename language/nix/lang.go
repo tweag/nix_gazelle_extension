@@ -389,8 +389,19 @@ func nixToDepSets(nixFile string) (*DepSets, error) {
 	var depSets DepSets
 	err = json.Unmarshal(out, &depSets)
 	if err != nil {
-		log.Printf("Incorrect json: %s\n", out)
-		log.Fatal(err)
+		replacer := strings.NewReplacer(
+			"\\n", "\n",
+			"\\", "",
+			"\"", "",
+		)
+
+		err_out_s := strings.Split(
+			replacer.Replace(string(out[:])),
+			"\n",
+		)
+
+		log.Printf("\033[31m" + err_out_s[1][2:] + "\033[0m")
+		log.Printf("\033[31m" + err_out_s[2] + "\033[0m")
 		return nil, err
 	}
 	return &depSets, nil
