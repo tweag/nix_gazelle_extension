@@ -45,9 +45,11 @@ func (l *nixLang) Kinds() map[string]rule.KindInfo {
 	return map[string]rule.KindInfo{
 		"export": {
 			MatchAny:   false,
-			MatchAttrs: []string{"files"},
+			MatchAttrs: []string{"name"},
 		},
-		"nixpkgs_package": {},
+		"nixpkgs_package": {
+			MatchAttrs: []string{"name"},
+		},
 	}
 }
 
@@ -60,6 +62,13 @@ func (l *nixLang) Loads() []rule.LoadInfo {
 			Name: "@io_tweag_gazelle_nix//tools:exporter.bzl",
 			Symbols: []string{
 				"export",
+			},
+		},
+		{
+
+			Name: "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
+			Symbols: []string{
+				"nixpkgs_package",
 			},
 		},
 	}
@@ -178,6 +187,11 @@ func fixGazelle(c *config.Config, f *rule.File) {
 	var nixRules []*rule.Rule
 	for _, r := range f.Rules {
 		if r.Kind() == "export" {
+			nixRules = append(nixRules, r)
+		}
+	}
+	for _, r := range f.Rules {
+		if r.Kind() == "nixpkgs_package" {
 			nixRules = append(nixRules, r)
 		}
 	}
