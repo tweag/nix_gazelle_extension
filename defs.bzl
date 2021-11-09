@@ -26,16 +26,8 @@ def io_tweag_gazelle_nix_packages(nixpkgs = "@io_tweag_gazelle_nix_nixpkgs"):
     )
 
     nixpkgs_package(
-        name = "scan_nix",
-        nix_file = "@io_tweag_gazelle_nix//nix/packages/scan_nix:default.nix",
-        nix_file_deps = [
-            "@io_tweag_gazelle_nix//nix/packages/scan_nix:Cargo.lock",
-            "@io_tweag_gazelle_nix//nix/packages/scan_nix:Cargo.toml",
-            "@io_tweag_gazelle_nix//nix/packages/scan_nix:runtime-closure.nix.template",
-            "@io_tweag_gazelle_nix//nix/packages/scan_nix:runtime.nix",
-            "@io_tweag_gazelle_nix//nix/packages/scan_nix:default.nix",
-            "@io_tweag_gazelle_nix//nix/packages/scan_nix:src/main.rs",
-        ],
+        name = "fptrace",
+        nix_file = "@io_tweag_gazelle_nix//nix:fptrace.nix",
         repository = nixpkgs,
     )
     

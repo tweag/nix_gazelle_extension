@@ -360,6 +360,23 @@ func (l *nixLang) UpdateRepos(args language.UpdateReposArgs) language.UpdateRepo
 	}
 }
 
+type TraceOut []struct {
+	Cmd struct {
+		Parent int
+		ID     int
+		Dir    string
+		Path   string
+		Args   []string
+	}
+	Inputs  []string
+	Outputs []string
+	FDs     struct {
+		Num0 string
+		Num1 string
+		Num2 string
+	}
+}
+
 // DepSets collection of DepSet structs
 type DepSets struct {
 	DepSets []DepSet
@@ -372,29 +389,32 @@ type DepSet struct {
 }
 
 // Nix2BuildPath path to a nix evaluator binary
-const Nix2BuildPath = "external/scan_nix/bin/scan-nix"
+const Nix2BuildPath = "external/fptrace/bin/fptrace"
 
 func nixToDepSets(nixFile string) (*DepSets, error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 	scanNix, err := bazel.Runfile(Nix2BuildPath)
-	cmd := exec.Command(scanNix, wsroot+"/default.nix")
+	cmd := exec.Command(scanNix, "-d", "/dev/stdout", "nix-instantiate", wsroot+"/default.nix")
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "NIX_FILE="+nixFile)
 	cmd.Dir = wsroot
-	out, err := cmd.CombinedOutput()
+	out, err := cmd.Output()
 	if err != nil {
 		log.Printf("%s", out)
 		log.Fatal(err)
 	}
-	var depSets DepSets
-	err = json.Unmarshal(out, &depSets)
-	if err != nil {
-		replacer := strings.NewReplacer(
-			"\\n", "\n",
-			"\\", "",
-			"\"", "",
-		)
+	var traceOut TraceOut
+	replacer := strings.NewReplacer(
+		"\\n", "\n",
+		"\\", "",
+	)
+	err_out_s := strings.Split(
+		replacer.Replace(string(out[:])),
+		"\n",
+	)
 
+	err = json.Unmarshal([]byte(err_out_s[1]), &traceOut)
+	if err != nil {
 		err_out_s := strings.Split(
 			replacer.Replace(string(out[:])),
 			"\n",
@@ -402,8 +422,54 @@ func nixToDepSets(nixFile string) (*DepSets, error) {
 
 		log.Printf("\033[31m" + err_out_s[1][2:] + "\033[0m")
 		log.Printf("\033[31m" + err_out_s[2] + "\033[0m")
+		log.Fatal(err)
 		return nil, err
 	}
+	filteredFiles := []string{}
+
+	for i := range traceOut[0].Inputs {
+		considered := traceOut[0].Inputs[i]
+		if strings.HasPrefix(considered, wsroot) {
+			filteredFiles = append(filteredFiles, considered)
+		}
+	}
+
+	sort.Sort(sort.Reverse(sort.StringSlice(filteredFiles)))
+	packages := []string{}
+
+	for i := range filteredFiles {
+		considered := filteredFiles[i]
+		if strings.HasSuffix(considered, "default.nix") {
+			packages = append(packages, strings.TrimSuffix(considered, "/default.nix"))
+		}
+	}
+
+	direct := DepSet{"direct", []string{}}
+	recursive := DepSet{"recursive", []string{}}
+	targets := []string{}
+
+	for _, x := range packages {
+		temp := filteredFiles[:0]
+		for _, y := range filteredFiles {
+			if strings.HasPrefix(y, x) {
+				target := ":" + strings.TrimPrefix(strings.TrimPrefix(y, x), "/")
+				targets = append(targets, "//"+strings.TrimPrefix(strings.TrimPrefix(x, wsroot)+target, "/"))
+			} else {
+				temp = append(temp, y)
+			}
+		}
+		filteredFiles = temp
+	}
+
+	nixPackage := "//" + strings.TrimPrefix(strings.TrimSuffix(nixFile, "/default.nix"), wsroot+"/")
+	for _, x := range targets {
+		if strings.HasPrefix(x, nixPackage) {
+			direct.Files = append(direct.Files, x)
+		}
+		recursive.Files = append(recursive.Files, x)
+	}
+
+	depSets := DepSets{[]DepSet{recursive, direct}}
 	return &depSets, nil
 }
 

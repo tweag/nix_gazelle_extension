@@ -12,7 +12,7 @@ load(
 
 gazelle(
     name = "gazelle",
-    data = ["@scan_nix//:bin/scan-nix"],
+    data = ["@fptrace//:bin/fptrace"],
     gazelle = "//:gazelle_binary",
 )
 
@@ -24,7 +24,7 @@ gazelle_binary(
 gazelle(
     name = "gazelle-update",
     command = "update",
-    data = ["@scan_nix//:bin/scan-nix"],
+    data = ["@fptrace//:bin/fptrace"],
     extra_args = [
         "-lang",
         "gazelle_nix",
@@ -35,7 +35,7 @@ gazelle(
 gazelle(
     name = "gazelle-update-repos",
     command = "update-repos",
-    data = ["@scan_nix//:bin/scan-nix"],
+    data = ["@fptrace//:bin/fptrace"],
     extra_args = [
         "-lang",
         "gazelle_nix",
