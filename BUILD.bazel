@@ -1,4 +1,0 @@
-alias(
-    name = "scan-nix",
-    actual = "@scan_nix//:bin/scan-nix",
-)

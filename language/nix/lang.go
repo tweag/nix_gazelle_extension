@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
+	"io/ioutil"
 	"log"
 	"path/filepath"
 	"sort"
@@ -48,7 +49,10 @@ func (l *nixLang) Kinds() map[string]rule.KindInfo {
 			MatchAttrs: []string{"name"},
 		},
 		"nixpkgs_package": {
-			MatchAttrs: []string{"name"},
+			MatchAttrs: []string{"name", "nix_file_deps"},
+			MergeableAttrs: map[string]bool{
+				"nix_file_deps": true,
+			},
 		},
 	}
 }
@@ -67,6 +71,13 @@ func (l *nixLang) Loads() []rule.LoadInfo {
 		{
 
 			Name: "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
+			Symbols: []string{
+				"nixpkgs_package",
+			},
+		},
+		{
+
+			Name: "//build/bazel/nixpkgs:nixpkgs.bzl",
 			Symbols: []string{
 				"nixpkgs_package",
 			},
@@ -187,11 +198,6 @@ func fixGazelle(c *config.Config, f *rule.File) {
 	var nixRules []*rule.Rule
 	for _, r := range f.Rules {
 		if r.Kind() == "export" {
-			nixRules = append(nixRules, r)
-		}
-	}
-	for _, r := range f.Rules {
-		if r.Kind() == "nixpkgs_package" {
 			nixRules = append(nixRules, r)
 		}
 	}
@@ -360,7 +366,7 @@ func (l *nixLang) UpdateRepos(args language.UpdateReposArgs) language.UpdateRepo
 	}
 }
 
-type TraceOut []struct {
+type TraceOut struct {
 	Cmd struct {
 		Parent int
 		ID     int
@@ -391,56 +397,70 @@ type DepSet struct {
 // Nix2BuildPath path to a nix evaluator binary
 const Nix2BuildPath = "external/fptrace/bin/fptrace"
 
+func reverse(s []string) []string {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+	return s
+}
+
 func nixToDepSets(nixFile string) (*DepSets, error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 	scanNix, err := bazel.Runfile(Nix2BuildPath)
-	cmd := exec.Command(scanNix, "-d", "/dev/stdout", "nix-instantiate", wsroot+"/default.nix")
-	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "NIX_FILE="+nixFile)
-	cmd.Dir = wsroot
-	out, err := cmd.Output()
+	tmpfile, err := ioutil.TempFile("", "nix-gzl*.json")
 	if err != nil {
-		log.Printf("%s", out)
 		log.Fatal(err)
 	}
+
+	defer tmpfile.Close()
+	defer os.Remove(tmpfile.Name())
+
+	cmd := exec.Command(
+		scanNix,
+		"-d",
+		tmpfile.Name(),
+		"nix-instantiate",
+		wsroot+"/default.nix",
+		"--argstr",
+		"nix_file",
+		strings.TrimPrefix(nixFile, wsroot))
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("\033[31m" + string(out[:]) + "\033[0m")
+		log.Fatal(err)
+	}
+	var traceOuts []TraceOut
+	byteValue, _ := ioutil.ReadFile(tmpfile.Name())
+	err = json.Unmarshal(byteValue, &traceOuts)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	filteredFiles := []string{nixFile}
+
 	var traceOut TraceOut
-	replacer := strings.NewReplacer(
-		"\\n", "\n",
-		"\\", "",
-	)
-	err_out_s := strings.Split(
-		replacer.Replace(string(out[:])),
-		"\n",
-	)
-
-	err = json.Unmarshal([]byte(err_out_s[1]), &traceOut)
-	if err != nil {
-		err_out_s := strings.Split(
-			replacer.Replace(string(out[:])),
-			"\n",
-		)
-
-		log.Printf("\033[31m" + err_out_s[1][2:] + "\033[0m")
-		log.Printf("\033[31m" + err_out_s[2] + "\033[0m")
-		log.Fatal(err)
-		return nil, err
-	}
-	filteredFiles := []string{}
-
-	for i := range traceOut[0].Inputs {
-		considered := traceOut[0].Inputs[i]
-		if strings.HasPrefix(considered, wsroot) {
-			filteredFiles = append(filteredFiles, considered)
+	for i := range traceOuts {
+		traceOut = traceOuts[i]
+		for j := range traceOut.Inputs {
+			considered := traceOut.Inputs[j]
+			if considered != nixFile && strings.HasPrefix(considered, wsroot) {
+				filteredFiles = append(filteredFiles, considered)
+			}
 		}
 	}
 
-	sort.Sort(sort.Reverse(sort.StringSlice(filteredFiles)))
+	sort.Strings(filteredFiles)
+	sort.Slice(filteredFiles, func(i, j int) bool {
+		return len(filteredFiles[i]) > len(filteredFiles[j])
+	})
+
 	packages := []string{}
 
 	for i := range filteredFiles {
 		considered := filteredFiles[i]
 		if strings.HasSuffix(considered, "default.nix") {
-			packages = append(packages, strings.TrimSuffix(considered, "/default.nix"))
+			packages = append(packages, strings.TrimSuffix(considered, "default.nix"))
 		}
 	}
 
@@ -452,8 +472,10 @@ func nixToDepSets(nixFile string) (*DepSets, error) {
 		temp := filteredFiles[:0]
 		for _, y := range filteredFiles {
 			if strings.HasPrefix(y, x) {
-				target := ":" + strings.TrimPrefix(strings.TrimPrefix(y, x), "/")
-				targets = append(targets, "//"+strings.TrimPrefix(strings.TrimPrefix(x, wsroot)+target, "/"))
+				pkg := strings.TrimSuffix(strings.TrimPrefix(x, wsroot+"/"), "/")
+				reltarget := strings.TrimPrefix(y, x)
+				target := "//" + pkg + ":" + reltarget
+				targets = append(targets, target)
 			} else {
 				temp = append(temp, y)
 			}
