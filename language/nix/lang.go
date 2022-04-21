@@ -75,13 +75,6 @@ func (l *nixLang) Loads() []rule.LoadInfo {
 				"nixpkgs_package",
 			},
 		},
-		{
-
-			Name: "//build/bazel/nixpkgs:nixpkgs.bzl",
-			Symbols: []string{
-				"nixpkgs_package",
-			},
-		},
 	}
 }
 
@@ -423,7 +416,7 @@ func nixToDepSets(nixFile string) (*DepSets, error) {
 		wsroot+"/default.nix",
 		"--argstr",
 		"nix_file",
-		strings.TrimPrefix(nixFile, wsroot))
+		strings.TrimPrefix(nixFile, wsroot + "/"))
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
