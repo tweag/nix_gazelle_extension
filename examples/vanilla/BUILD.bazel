@@ -1,0 +1,43 @@
+# BUILD.bazel
+# gazelle:exclude nix
+# gazelle:nix_repositories nixpkgs=@nixpkgs
+load(
+    "@bazel_gazelle//:def.bzl",
+    "DEFAULT_LANGUAGES",
+    "gazelle",
+    "gazelle_binary",
+)
+
+gazelle(
+    name = "gazelle",
+    data = ["@fptrace//:bin/fptrace"],
+    gazelle = "//:gazelle_binary",
+)
+
+gazelle_binary(
+    name = "gazelle_binary",
+    languages = DEFAULT_LANGUAGES + ["@io_tweag_gazelle_nix//language/nix:gazelle_nix"],
+)
+
+gazelle(
+    name = "gazelle-update",
+    command = "update",
+    data = ["@fptrace//:bin/fptrace"],
+    extra_args = [
+        "-lang",
+        "gazelle_nix",
+    ],
+    gazelle = "//:gazelle_binary",
+)
+
+gazelle(
+    name = "gazelle-update-repos",
+    command = "update-repos",
+    data = ["@fptrace//:bin/fptrace"],
+    extra_args = [
+        "-lang",
+        "gazelle_nix",
+        "any",
+    ],
+    gazelle = "//:gazelle_binary",
+)

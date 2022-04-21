@@ -1,6 +1,7 @@
 package gazelle_nix
 
 import (
+	"runtime/debug"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -93,7 +94,7 @@ func (l *nixLang) Loads() []rule.LoadInfo {
 // Any non-fatal errors this function encounters should be logged using
 // log.Print.
 func (l *nixLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
-	nixPrelude := "//:default.nix"
+	nixPreludeConf := args.Config.Exts[nixName].(Config).NixPrelude
 
 	nixFiles := make(map[string]string)
 	nixNames := make(map[string]string)
@@ -106,7 +107,7 @@ func (l *nixLang) GenerateRules(args language.GenerateArgs) language.GenerateRes
 		pth := filepath.Join(args.Dir, f)
 
 		log.Printf("parsing nix file: path=%q", pth)
-		nixFileDep, err := nixToDepSets(pth)
+		nixFileDep, err := nixToDepSets(nixPreludeConf, pth)
 		if err != nil {
 			log.Printf("failed parsing nix file: path=%q", pth)
 			continue
@@ -123,7 +124,15 @@ func (l *nixLang) GenerateRules(args language.GenerateArgs) language.GenerateRes
 		fileDeps := nixFilesDeps[nixFile]
 		lib := libraries[nixFile]
 		pkgName := strings.Replace(nixNames[nixFile], "/", ".", -1)
-		tgtName := nixNames[nixFile] + "/default.nix"
+		var tgtName string
+		var nixOpts []string
+		if len(nixPreludeConf) > 0 {
+			tgtName = "//:" + nixPreludeConf
+			nixOpts = []string{"--argstr", "nix_file", nixNames[nixFile]+"/default.nix"}
+		} else {
+			tgtName = "//" + nixNames[nixFile] + ":default.nix"
+			nixOpts = []string{}
+		}
 		bzlTemplate := strings.Replace(nixFiles[nixFile], "default.nix", "BUILD.bazel.tpl", -1)
 		var buildFile string
 		if fileExists(bzlTemplate) {
@@ -134,10 +143,10 @@ func (l *nixLang) GenerateRules(args language.GenerateArgs) language.GenerateRes
 		}
 		lib = &nixLibrary{
 			Name:      pkgName,
-			NixFile:   nixPrelude,
+			NixFile:   tgtName,
 			Files:     fileDeps.DepSets[1].Files,
 			Deps:      fileDeps.DepSets[0].Files,
-			NixOpts:   []string{"--argstr", "nix_file", tgtName},
+			NixOpts:   nixOpts,
 			BuildFile: buildFile,
 		}
 		libraries[nixFile] = lib
@@ -211,6 +220,7 @@ func (*nixLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error { return ni
 
 // Config configuration for language extension
 type Config struct {
+	NixPrelude      string
 	NixRepositories map[string]string
 }
 
@@ -238,17 +248,21 @@ func (*nixLang) Configure(c *config.Config, rel string, f *rule.File) {
 		extraConfig = m.(Config)
 	} else {
 		extraConfig = Config{
+			NixPrelude: "",
 			NixRepositories: make(map[string]string),
 		}
 	}
 	for _, directive := range f.Directives {
 		switch directive.Key {
+		case "nix_prelude":
+			extraConfig.NixPrelude = directive.Value
 		case "nix_repositories":
 			parseNixRepositories(&extraConfig, directive.Value)
 		}
 	}
 	c.Exts[nixName] = extraConfig
 }
+
 
 func parseNixRepositories(config *Config, value string) {
 	r := strings.Split(value, " ")
@@ -307,6 +321,7 @@ func (l *nixLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolv
 // are not recoginized by any Configurer.
 func (*nixLang) KnownDirectives() []string {
 	return []string{
+		"nix_prelude",
 		"nix_repositories",
 	}
 }
@@ -344,8 +359,8 @@ func (l *nixLang) UpdateRepos(args language.UpdateReposArgs) language.UpdateRepo
 	for i, pkg := range packageList {
 		r := rule.NewRule("nixpkgs_package", pkg.Name)
 		r.SetAttr("nix_file", pkg.NixFile)
-		r.SetAttr("nix_file_deps", pkg.NixFileDeps)
 		r.SetAttr("nixopts", pkg.NixOpts)
+		r.SetAttr("nix_file_deps", pkg.NixFileDeps)
 		r.SetAttr("repositories", nixRepositoriesConf)
 		if len(pkg.BuildFile) > 0 {
 			r.SetAttr("build_file", pkg.BuildFile)
@@ -397,7 +412,7 @@ func reverse(s []string) []string {
 	return s
 }
 
-func nixToDepSets(nixFile string) (*DepSets, error) {
+func nixToDepSets(nixPrelude string, nixFile string) (*DepSets, error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 	scanNix, err := bazel.Runfile(Nix2BuildPath)
 	tmpfile, err := ioutil.TempFile("", "nix-gzl*.json")
@@ -407,22 +422,21 @@ func nixToDepSets(nixFile string) (*DepSets, error) {
 
 	defer tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
+	var cmd *exec.Cmd
 
-	cmd := exec.Command(
-		scanNix,
-		"-d",
-		tmpfile.Name(),
-		"nix-instantiate",
-		wsroot+"/default.nix",
-		"--argstr",
-		"nix_file",
-		strings.TrimPrefix(nixFile, wsroot + "/"))
+	if len(nixPrelude) > 0 {
+		cmd = exec.Command(scanNix, "-d", tmpfile.Name(), "nix-instantiate", wsroot+"/"+nixPrelude, "--argstr", "nix_file", nixFile)
+	} else {
+		cmd = exec.Command(scanNix, "-d", tmpfile.Name(), "nix-instantiate", nixFile)
+	}
 
 	out, err := cmd.CombinedOutput()
+
 	if err != nil {
-		log.Printf("\033[31m" + string(out[:]) + "\033[0m")
+		log.Printf("\033[31m" + string(out[:]) +"\n" + string(debug.Stack()) + "\033[0m")
 		log.Fatal(err)
 	}
+
 	var traceOuts []TraceOut
 	byteValue, _ := ioutil.ReadFile(tmpfile.Name())
 	err = json.Unmarshal(byteValue, &traceOuts)

@@ -3,6 +3,7 @@
 # gazelle:exclude 3rdparty
 # gazelle:exclude default.nix
 # gazelle:nix_repositories nixpkgs=@nixpkgs
+# gazelle:nix_prelude default.nix
 load(
     "@bazel_gazelle//:def.bzl",
     "DEFAULT_LANGUAGES",
