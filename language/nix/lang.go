@@ -26,7 +26,11 @@ import (
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 )
 
-const nixName = "nix"
+const (
+	nixName     = "nix"
+	exportRule  = "export"
+	packageRule = "nixpkgs_package"
+)
 
 var _ = fmt.Printf
 
@@ -46,11 +50,11 @@ func (l *nixLang) Name() string { return nixName }
 // kinds of rules generated for this language may be found here.
 func (l *nixLang) Kinds() map[string]rule.KindInfo {
 	return map[string]rule.KindInfo{
-		"export": {
+		exportRule: {
 			MatchAny:   false,
 			MatchAttrs: []string{"name"},
 		},
-		"nixpkgs_package": {
+		packageRule: {
 			MatchAttrs: []string{"name", "nix_file_deps"},
 			MergeableAttrs: map[string]bool{
 				"nix_file_deps": true,
@@ -67,7 +71,7 @@ func (l *nixLang) Loads() []rule.LoadInfo {
 		{
 			Name: "@io_tweag_gazelle_nix//tools:exporter.bzl",
 			Symbols: []string{
-				"export",
+				exportRule,
 			},
 		},
 		{
@@ -194,7 +198,7 @@ type nixLibrary struct {
 }
 
 func (l *nixLibrary) ToRule() *rule.Rule {
-	ruleStatement := rule.NewRule("export", l.Name)
+	ruleStatement := rule.NewRule(exportRule, l.Name)
 	ruleStatement.SetAttr("nix_file", l.NixFile)
 	sort.Strings(l.Files)
 	ruleStatement.SetAttr("files", l.Files)
@@ -211,8 +215,8 @@ func (l *nixLibrary) ToRule() *rule.Rule {
 
 func fixGazelle(extensionConfig *config.Config, buildFile *rule.File) {
 	for _, loadStatement := range buildFile.Loads {
-		if loadStatement.Has("export") {
-			loadStatement.Remove("export")
+		if loadStatement.Has(exportRule) {
+			loadStatement.Remove(exportRule)
 
 			if loadStatement.IsEmpty() {
 				loadStatement.Delete()
@@ -223,7 +227,7 @@ func fixGazelle(extensionConfig *config.Config, buildFile *rule.File) {
 	var knownRuleStatements []*rule.Rule
 
 	for _, ruleStatement := range buildFile.Rules {
-		if ruleStatement.Kind() == "export" {
+		if ruleStatement.Kind() == exportRule {
 			knownRuleStatements = append(knownRuleStatements, ruleStatement)
 		}
 	}
@@ -298,10 +302,13 @@ func (*nixLang) Configure(extensionConfig *config.Config, rel string, buildFile 
 
 func parseNixRepositories(nixconfig *Config, value string) {
 	repoParseErr := errors.New("Can't parse value of nix_repositories: ")
-	r := strings.Split(value, " ")
-	keyValuePair := make([]string, 0, len(r)*2)
 
-	for _, key := range r {
+	const parts = 2
+
+	pairs := strings.Split(value, " ")
+	keyValuePair := make([]string, 0, len(pairs)*parts)
+
+	for _, key := range pairs {
 		keyValuePair = append(keyValuePair, strings.Split(key, "=")...)
 	}
 
@@ -337,9 +344,9 @@ func (l *nixLang) Imports(
 	var prefix string
 
 	switch ruleStatement.Kind() {
-	case "export":
+	case exportRule:
 		prefix = "exports:"
-	case "nixpkgs_package":
+	case packageRule:
 		prefix = "nixpkgs_package:"
 	}
 
@@ -626,7 +633,7 @@ func collectDependenciesFromFile(
 	}
 
 	for _, ruleStatement := range buildFile.Rules {
-		if ruleStatement.Kind() == "export" {
+		if ruleStatement.Kind() == exportRule {
 			pkg := nixWorkspaceLibrary{
 				Name:         ruleStatement.AttrString("name"),
 				NixFile:      ruleStatement.AttrString("nix_file"),
