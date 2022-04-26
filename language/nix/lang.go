@@ -32,7 +32,10 @@ const (
 	packageRule = "nixpkgs_package"
 )
 
-var _ = fmt.Printf
+var (
+	errAssert = errors.New("assertion failed")
+	errParse  = errors.New("Can't parse value of nix_repositories: ")
+)
 
 type nixLang struct{}
 
@@ -103,7 +106,7 @@ func (l *nixLang) GenerateRules(
 	nixConfig, ok := args.Config.Exts[nixName].(Config)
 
 	if !ok {
-		log.Fatal(errors.New("Type assertion failed"))
+		panic(fmt.Errorf("%w", errAssert))
 	}
 
 	nixPreludeConf := nixConfig.NixPrelude
@@ -308,8 +311,6 @@ func (*nixLang) Configure(extensionConfig *config.Config, rel string, buildFile 
 }
 
 func parseNixRepositories(nixconfig *Config, value string) {
-	repoParseErr := errors.New("Can't parse value of nix_repositories: ")
-
 	const parts = 2
 
 	pairs := strings.Split(value, " ")
@@ -320,8 +321,7 @@ func parseNixRepositories(nixconfig *Config, value string) {
 	}
 
 	if len(keyValuePair)%2 != 0 {
-		err := fmt.Errorf("%w: %s", repoParseErr, value)
-		log.Fatal(err)
+		panic(fmt.Errorf("%w: %s", errParse, value))
 	}
 
 	for i := 0; i < len(keyValuePair); i += 2 {
@@ -415,7 +415,7 @@ func (l *nixLang) UpdateRepos(
 
 	if !ok {
 		return language.UpdateReposResult{
-			Error: errors.New("Type assertion failed"),
+			Error: fmt.Errorf("%w %s", errAssert, "nixConfig"),
 			Gen:   nil,
 		}
 	}
@@ -519,7 +519,7 @@ func nixToDepSets(nixPrelude, nixFile string) (*DepSets, error) {
 			) + "\033[0m",
 		)
 
-		return nil, err
+		return nil, fmt.Errorf("evaluation of nix expression failed: %w", err)
 	}
 
 	var traceOuts []TraceOut
@@ -528,7 +528,7 @@ func nixToDepSets(nixPrelude, nixFile string) (*DepSets, error) {
 	err = json.Unmarshal(byteValue, &traceOuts)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshaling of trace output failed: %w", err)
 	}
 
 	filteredFiles := []string{nixFile}
@@ -696,8 +696,6 @@ func (resolver) Imports(
 	r *rule.Rule,
 	f *rule.File,
 ) []resolve.ImportSpec {
-	fmt.Println("Imports:", r.Kind(), r.Name())
-
 	return nil
 }
 
@@ -722,7 +720,6 @@ func (resolver) Resolve(
 	r *rule.Rule,
 	from label.Label,
 ) {
-	fmt.Println("Resolve:", r.Name(), "from", from)
 }
 
 func fileExists(filename string) bool {
