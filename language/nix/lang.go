@@ -1,7 +1,8 @@
-package gazelle_nix
+package nix
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -25,7 +26,7 @@ import (
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 )
 
-const nixName = "gazelle_nix"
+const nixName = "nix"
 
 var _ = fmt.Printf
 
@@ -107,6 +108,7 @@ func (l *nixLang) GenerateRules(
 		nixFileDep, err := nixToDepSets(nixPreludeConf, pth)
 		if err != nil {
 			log.Printf("failed parsing nix file: path=%q", pth)
+
 			continue
 		}
 		nixFiles[sourceFile] = pth
@@ -189,6 +191,7 @@ func (l *nixLibrary) ToRule() *rule.Rule {
 	if len(l.BuildFile) > 0 {
 		ruleStatement.SetAttr("build_file", l.BuildFile)
 	}
+
 	return ruleStatement
 }
 
@@ -273,14 +276,14 @@ func (*nixLang) Configure(extensionConfig *config.Config, rel string, buildFile 
 }
 
 func parseNixRepositories(nixconfig *Config, value string) {
+	var repoParseErr = errors.New("Can't parse value of nix_repositories: ")
 	r := strings.Split(value, " ")
 	keyValuePair := make([]string, 0, len(r)*2)
 	for _, key := range r {
 		keyValuePair = append(keyValuePair, strings.Split(key, "=")...)
 	}
 	if len(keyValuePair)%2 != 0 {
-		msg := "Can't parse value of nix_repositories: %s"
-		err := fmt.Errorf(msg, value)
+		err := fmt.Errorf("%w: %s", repoParseErr, value)
 		log.Fatal(err)
 	}
 	for i := 0; i < len(keyValuePair); i += 2 {
@@ -314,6 +317,7 @@ func (l *nixLang) Imports(
 	case "nixpkgs_package":
 		prefix = "nixpkgs_package:"
 	}
+
 	return []resolve.ImportSpec{{nixName, prefix + ruleStatement.Name()}}
 }
 
@@ -385,6 +389,7 @@ func (l *nixLang) UpdateRepos(
 	}
 
 	return language.UpdateReposResult{
+		Error: nil,
 		Gen: repoRuleStatements,
 	}
 }
@@ -534,6 +539,7 @@ func nixToDepSets(nixPrelude, nixFile string) (*DepSets, error) {
 	}
 
 	depSets := DepSets{[]DepSet{recursive, direct}}
+
 	return &depSets, nil
 }
 
@@ -570,6 +576,7 @@ func collectDependenciesFromRepo(
 			collectDependenciesFromFile(buildFile, extensionConfig, &packages)
 		},
 	)
+
 	return packages
 }
 
@@ -590,6 +597,7 @@ func collectDependenciesFromFile(
 				NixFileDeps: ruleStatement.AttrStrings("deps"),
 				NixOpts:     ruleStatement.AttrStrings("nixopts"),
 				BuildFile:   ruleStatement.AttrString("build_file"),
+				Repositories: make(map[string]string),
 			}
 			*packages = append(*packages, pkg)
 		}
@@ -630,6 +638,7 @@ func (resolver) Imports(
 	f *rule.File,
 ) []resolve.ImportSpec {
 	fmt.Println("Imports:", r.Kind(), r.Name())
+
 	return nil
 }
 
@@ -662,5 +671,6 @@ func fileExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
+
 	return !info.IsDir()
 }

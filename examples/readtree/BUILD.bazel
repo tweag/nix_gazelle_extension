@@ -19,7 +19,7 @@ gazelle(
 
 gazelle_binary(
     name = "gazelle_binary",
-    languages = DEFAULT_LANGUAGES + ["@io_tweag_gazelle_nix//language/nix:gazelle_nix"],
+    languages = DEFAULT_LANGUAGES + ["@io_tweag_gazelle_nix//language/nix"],
 )
 
 gazelle(
@@ -28,7 +28,7 @@ gazelle(
     data = ["@fptrace//:bin/fptrace"],
     extra_args = [
         "-lang",
-        "gazelle_nix",
+        "nix",
     ],
     gazelle = "//:gazelle_binary",
 )
@@ -39,7 +39,7 @@ gazelle(
     data = ["@fptrace//:bin/fptrace"],
     extra_args = [
         "-lang",
-        "gazelle_nix",
+        "nix",
         "any",
     ],
     gazelle = "//:gazelle_binary",
