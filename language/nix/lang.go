@@ -100,7 +100,14 @@ func (l *nixLang) Loads() []rule.LoadInfo {
 func (l *nixLang) GenerateRules(
 	args language.GenerateArgs,
 ) language.GenerateResult {
-	nixPreludeConf := args.Config.Exts[nixName].(Config).NixPrelude
+	nixConfig, ok := args.Config.Exts[nixName].(Config)
+
+	if !ok {
+		log.Fatal(errors.New("Type assertion failed"))
+	}
+
+	nixPreludeConf := nixConfig.NixPrelude
+
 	nixFiles := make(map[string]string)
 	nixNames := make(map[string]string)
 	nixFilesDeps := make(map[string]*DepSets)
@@ -275,12 +282,12 @@ func (*nixLang) Configure(extensionConfig *config.Config, rel string, buildFile 
 		return
 	}
 
-	m, ok := extensionConfig.Exts[nixName]
-
 	var extraConfig Config
 
+	m, ok := extensionConfig.Exts[nixName].(Config)
+
 	if ok {
-		extraConfig = m.(Config)
+		extraConfig = m
 	} else {
 		extraConfig = Config{
 			NixPrelude:      "",
@@ -404,7 +411,16 @@ func (l *nixLang) UpdateRepos(
 	args language.UpdateReposArgs,
 ) language.UpdateReposResult {
 	packageList := collectDependenciesFromRepo(args.Config, l)
-	nixRepositoriesConf := args.Config.Exts[nixName].(Config).NixRepositories
+	nixConfig, ok := args.Config.Exts[nixName].(Config)
+
+	if !ok {
+		return language.UpdateReposResult{
+			Error: errors.New("Type assertion failed"),
+			Gen:   nil,
+		}
+	}
+
+	nixRepositoriesConf := nixConfig.NixRepositories
 
 	repoRuleStatements := make([]*rule.Rule, len(packageList))
 
