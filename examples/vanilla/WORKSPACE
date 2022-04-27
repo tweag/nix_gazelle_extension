@@ -34,11 +34,11 @@ nixpkgs_local_repository(
     nix_file = "//nix/nixpkgs:default.nix",
 )
 
-load("@io_tweag_gazelle_nix//:repositories.bzl", "io_tweag_gazelle_nix_repositories")
+load("@io_tweag_gazelle_nix//gazelle_nix:repositories.bzl", "io_tweag_gazelle_nix_repositories")
 
 io_tweag_gazelle_nix_repositories()
 
-load("@io_tweag_gazelle_nix//:defs.bzl", "io_tweag_gazelle_nix_packages")
+load("@io_tweag_gazelle_nix//gazelle_nix:defs.bzl", "io_tweag_gazelle_nix_packages")
 
 io_tweag_gazelle_nix_packages(nixpkgs = "@nixpkgs")
 

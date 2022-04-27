@@ -5,7 +5,7 @@ go_library(
     srcs = [
         "lang.go",
     ],
-    importpath = "github.com/tweag/nix_gazelle_extension/language/nix",
+    importpath = "github.com/tweag/nix_gazelle_extension/gazelle_nix",
     visibility = ["//visibility:public"],
     deps = [
         "@bazel_gazelle//config:go_default_library",
