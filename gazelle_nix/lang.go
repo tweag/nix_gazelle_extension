@@ -28,7 +28,7 @@ import (
 
 const (
 	nixName     = "nix"
-	exportRule  = "export"
+	exportRule  = "export_nix"
 	packageRule = "nixpkgs_package"
 )
 
@@ -72,7 +72,7 @@ func (l *nixLang) Kinds() map[string]rule.KindInfo {
 func (l *nixLang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
-			Name: "@io_tweag_gazelle_nix//tools:exporter.bzl",
+			Name: "@io_tweag_gazelle_nix//gazelle_nix:nix_exporter.bzl",
 			Symbols: []string{
 				exportRule,
 			},

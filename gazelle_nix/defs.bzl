@@ -15,6 +15,7 @@ load(
 )
 
 def io_tweag_gazelle_nix_packages(nixpkgs = "@io_tweag_gazelle_nix_nixpkgs"):
+    """ Load packages required by gazelle_nix extension. """
     rules_nixpkgs_dependencies()
 
     nixpkgs_local_repository(
@@ -34,3 +35,4 @@ def io_tweag_gazelle_nix_packages(nixpkgs = "@io_tweag_gazelle_nix_nixpkgs"):
     nixpkgs_go_configure(repository = nixpkgs)
     go_rules_dependencies()
     gazelle_dependencies()
+
