@@ -5,8 +5,8 @@ go_library(
     srcs = [
         "lang.go",
     ],
-    importpath = "github.com/tweag/nix_gazelle_extension/gazelle_nix",
     data = ["@fptrace//:bin/fptrace"],
+    importpath = "github.com/tweag/nix_gazelle_extension/gazelle_nix",
     visibility = ["//visibility:public"],
     deps = [
         "@bazel_gazelle//config:go_default_library",

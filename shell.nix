@@ -3,7 +3,19 @@
 with pkgs;
 
 mkShell {
-  buildInputs = [ bazel_4 binutils cacert go go-tools nix openjdk11 python3 less ];
+  buildInputs = [
+    bazel_4
+    bazel-buildtools
+    binutils
+    cacert
+    go
+    go-tools
+    nix
+    nixfmt
+    openjdk11
+    python3
+    less
+  ];
   shellHook = ''
     mkdir -p $(pwd)/gazelle_nix/.go
     mkdir -p $(pwd)/gazelle_nix/.gocache

@@ -18,7 +18,7 @@ def io_tweag_gazelle_nix_defs(nixpkgs = None, get_go_from_nix = True):
 
     Bazel seems to be eagerly resolving all `load` statements, which
     results in circular dependencies happening, whenever we try to load
-    both rules_nixpkgs_dependencies and other rukes_nixpkgs:*.bzl in 
+    both rules_nixpkgs_dependencies and other rukes_nixpkgs:*.bzl in
     the same macro.
     """
     if not nixpkgs:
