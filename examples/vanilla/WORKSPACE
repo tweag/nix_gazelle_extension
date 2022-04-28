@@ -7,44 +7,12 @@ local_repository(
     path = "../..",
 )
 
-RULES_TWEAG_COMMIT = "027dc977d0cb8d93c43a5ae0e812c779e88beb9a"
-
 http_archive(
     name = "io_tweag_rules_nixpkgs",
     sha256 = "941b0a6c45eb60b8245d79d71053d608499d1a9aba166c7a1b34d40c95112b4a",
-    strip_prefix = "rules_nixpkgs-%s" % RULES_TWEAG_COMMIT,
-    urls = ["https://github.com/tweag/rules_nixpkgs/archive/%s.tar.gz" % RULES_TWEAG_COMMIT],
+    strip_prefix = "rules_nixpkgs-%s" % "027dc977d0cb8d93c43a5ae0e812c779e88beb9a",
+    urls = ["https://github.com/tweag/rules_nixpkgs/archive/%s.tar.gz" % "027dc977d0cb8d93c43a5ae0e812c779e88beb9a"],
 )
-
-load(
-    "@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl",
-    "rules_nixpkgs_dependencies",
-)
-
-rules_nixpkgs_dependencies()
-
-load(
-    "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
-    "nixpkgs_local_repository",
-    "nixpkgs_package",
-)
-
-nixpkgs_local_repository(
-    name = "nixpkgs",
-    nix_file = "//nix/nixpkgs:default.nix",
-)
-
-load("@io_tweag_gazelle_nix//gazelle_nix:repositories.bzl", "io_tweag_gazelle_nix_repositories")
-
-io_tweag_gazelle_nix_repositories()
-
-load("@io_tweag_gazelle_nix//gazelle_nix:defs.bzl", "io_tweag_gazelle_nix_packages")
-
-io_tweag_gazelle_nix_packages(nixpkgs = "@nixpkgs")
-
-###############
-# Go preamble
-###############
 
 http_archive(
     name = "io_bazel_rules_go",
@@ -55,36 +23,61 @@ http_archive(
     ],
 )
 
+http_archive(
+    name = "bazel_gazelle",
+    sha256 = "00cda3c9210a8f6368dff5f3b050b8ef5e5253d1b491bce74a7932120897d96d",
+    strip_prefix = "bazel-gazelle-%s" % "56d35f8db086bb65ef876f96f7baa7b71516daf8",
+    urls = [
+        "https://github.com/bazelbuild/bazel-gazelle/archive/56d35f8db086bb65ef876f96f7baa7b71516daf8.tar.gz",
+    ],
+)
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
+load(
+    "@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl",
+    "rules_nixpkgs_dependencies",
+)
+
+go_rules_dependencies()
+
+rules_nixpkgs_dependencies()
+
+load(
+    "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
+    "nixpkgs_cc_configure",
+    "nixpkgs_local_repository",
+    "nixpkgs_package",
+)
 load(
     "@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl",
     "nixpkgs_go_configure",
 )
 
-nixpkgs_go_configure(repository = "@nixpkgs")
-
-load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
-
-go_rules_dependencies()
-
-####################
-# Gazelle preamble
-####################
-
-http_archive(
-    name = "bazel_gazelle",
-    sha256 = "5982e5463f171da99e3bdaeff8c0f48283a7a5f396ec5282910b9e8a49c0dd7e",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.25.0/bazel-gazelle-v0.25.0.tar.gz",
-        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.25.0/bazel-gazelle-v0.25.0.tar.gz",
+nixpkgs_local_repository(
+    name = "io_tweag_gazelle_nix_nixpkgs",
+    nix_file = "@io_tweag_gazelle_nix//nix:nixpkgs-stable.nix",
+    nix_file_deps = [
+        "@io_tweag_gazelle_nix//nix:nixpkgs-stable.json",
     ],
 )
 
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+nixpkgs_go_configure(
+    repository = "@io_tweag_gazelle_nix_nixpkgs",
+)
 
-############################################################
-# Define your own dependencies here using go_repository.
-# Else, dependencies declared by rules_go/gazelle will be used.
-# The first declaration of an external repository "wins".
-############################################################
+nixpkgs_package(
+    name = "fptrace",
+    nix_file = "@io_tweag_gazelle_nix//nix:fptrace.nix",
+    repository = "@io_tweag_gazelle_nix_nixpkgs",
+)
 
 gazelle_dependencies()
+
+go_repository(
+    name = "org_golang_x_xerrors",
+    build_file_proto_mode = "disable_global",
+    importpath = "golang.org/x/xerrors",
+    sum = "h1:go1bK/D/BFZV2I8cIQd1NKEZ+0owSTG1fDTci4IqFcE=",
+    version = "v0.0.0-20200804184101-5ec99f83aff1",
+)

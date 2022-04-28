@@ -10,7 +10,6 @@ load(
 
 gazelle(
     name = "gazelle",
-    data = ["@fptrace//:bin/fptrace"],
     gazelle = "//:gazelle_binary",
 )
 
@@ -22,7 +21,6 @@ gazelle_binary(
 gazelle(
     name = "gazelle-update",
     command = "update",
-    data = ["@fptrace//:bin/fptrace"],
     extra_args = [
         "-lang",
         "nix",
@@ -33,7 +31,6 @@ gazelle(
 gazelle(
     name = "gazelle-update-repos",
     command = "update-repos",
-    data = ["@fptrace//:bin/fptrace"],
     extra_args = [
         "-lang",
         "nix",
