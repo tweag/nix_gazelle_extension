@@ -1,0 +1,12 @@
+diff --git deps.bzl deps.bzl
+index 7066e3f..2e2e8a2 100644
+--- deps.bzl
++++ deps.bzl
+@@ -317,6 +317,7 @@ def gazelle_dependencies(
+     _maybe(
+         go_repository,
+         name = "org_golang_x_mod",
++        build_external = "external",
+         importpath = "golang.org/x/mod",
+         sum = "h1:kQgndtyPBW/JIYERgdxfwMYh3AVStj88WQTlNDi2a+o=",
+         version = "v0.6.0-dev.0.20220106191415-9b9b3d81d5e3",

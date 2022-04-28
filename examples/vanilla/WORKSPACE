@@ -30,6 +30,10 @@ http_archive(
     urls = [
         "https://github.com/bazelbuild/bazel-gazelle/archive/56d35f8db086bb65ef876f96f7baa7b71516daf8.tar.gz",
     ],
+    patches = [
+        # https://github.com/bazelbuild/bazel-gazelle/issues/1217
+        "@gazelle_nix_example_vanilla//:patches/001-org_golang_x_mod.patch",
+    ],
 )
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
@@ -74,10 +78,3 @@ nixpkgs_package(
 
 gazelle_dependencies()
 
-go_repository(
-    name = "org_golang_x_xerrors",
-    build_file_proto_mode = "disable_global",
-    importpath = "golang.org/x/xerrors",
-    sum = "h1:go1bK/D/BFZV2I8cIQd1NKEZ+0owSTG1fDTci4IqFcE=",
-    version = "v0.0.0-20200804184101-5ec99f83aff1",
-)
