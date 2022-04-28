@@ -1,29 +1,29 @@
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
-load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
 load(
     "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
     "nixpkgs_local_repository",
     "nixpkgs_package",
 )
 load(
-   "@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl",
-   "rules_nixpkgs_dependencies",
-)
-load(
     "@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl",
     "nixpkgs_go_configure",
 )
 
-def io_tweag_gazelle_nix_packages(nixpkgs = "@io_tweag_gazelle_nix_nixpkgs"):
+def io_tweag_gazelle_nix_packages(nixpkgs = None):
     """ Load packages required by gazelle_nix extension. """
-    rules_nixpkgs_dependencies()
+    if not nixpkgs:
+        nixpkgs = "@io_tweag_gazelle_nix_nixpkgs"
+        nixpkgs_local_repository(
+            name = nixpkgs[1:],
+            nix_file = "@io_tweag_gazelle_nix//nix:nixpkgs-stable.nix",
+            nix_file_deps = [
+                "@io_tweag_gazelle_nix//nix:nixpkgs-stable.json",
+            ],
+        )
 
-    nixpkgs_local_repository(
-        name = "io_tweag_gazelle_nix_nixpkgs",
-        nix_file = "@io_tweag_gazelle_nix//nix:nixpkgs-stable.nix",
-        nix_file_deps = [
-            "@io_tweag_gazelle_nix//nix:nixpkgs-stable.json",
-        ],
+    nixpkgs_go_configure(
+        repository = nixpkgs,
     )
 
     nixpkgs_package(
@@ -31,8 +31,5 @@ def io_tweag_gazelle_nix_packages(nixpkgs = "@io_tweag_gazelle_nix_nixpkgs"):
         nix_file = "@io_tweag_gazelle_nix//nix:fptrace.nix",
         repository = nixpkgs,
     )
-    
-    nixpkgs_go_configure(repository = nixpkgs)
-    go_rules_dependencies()
-    gazelle_dependencies()
 
+    gazelle_dependencies()

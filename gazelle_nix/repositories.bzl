@@ -24,10 +24,13 @@ def io_tweag_gazelle_nix_repositories():
     maybe(
         http_archive,
         name = "bazel_gazelle",
-        sha256 = "5982e5463f171da99e3bdaeff8c0f48283a7a5f396ec5282910b9e8a49c0dd7e",
+        sha256 = "00cda3c9210a8f6368dff5f3b050b8ef5e5253d1b491bce74a7932120897d96d",
+        strip_prefix = "bazel-gazelle-%s" % "56d35f8db086bb65ef876f96f7baa7b71516daf8",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.25.0/bazel-gazelle-v0.25.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.25.0/bazel-gazelle-v0.25.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/archive/56d35f8db086bb65ef876f96f7baa7b71516daf8.tar.gz",
+        ],
+        patches = [
+            # https://github.com/bazelbuild/bazel-gazelle/issues/1217
+            "@gazelle_nix_example_vanilla//:patches/001-org_golang_x_mod.patch",
         ],
     )
-
