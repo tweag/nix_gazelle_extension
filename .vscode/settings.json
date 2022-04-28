@@ -1,0 +1,7 @@
+{
+  "go.goroot": "${workspaceFolder}/.goroot",
+  "go.gopath": "${workspaceFolder}/.go",
+  "go.toolsEnvVars": {
+    "GO11MODULE": "on",
+  }
+}
