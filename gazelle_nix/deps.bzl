@@ -5,6 +5,6 @@ load(
 )
 
 def io_tweag_gazelle_nix_deps():
-    """ Load packages required by gazelle_nix extension. """
+    """ Load dependencies required by dependencies of gazelle nix. """
     go_rules_dependencies()
     rules_nixpkgs_dependencies()

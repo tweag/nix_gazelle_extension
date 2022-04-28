@@ -15,6 +15,7 @@ mkShell {
     export GOPATH=$(pwd)/gazelle_nix/.go
 
     # Making VSCode Go extension happy
+    # (Installing latest staticcheck fails)
     go install honnef.co/go/tools/cmd/staticcheck@v0.2.2
   '';
 }

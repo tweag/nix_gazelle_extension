@@ -7,84 +7,11 @@ local_repository(
     path = "../..",
 )
 
-RULES_TWEAG_COMMIT = "027dc977d0cb8d93c43a5ae0e812c779e88beb9a"
-
-http_archive(
-    name = "io_tweag_rules_nixpkgs",
-    sha256 = "941b0a6c45eb60b8245d79d71053d608499d1a9aba166c7a1b34d40c95112b4a",
-    strip_prefix = "rules_nixpkgs-%s" % RULES_TWEAG_COMMIT,
-    urls = ["https://github.com/tweag/rules_nixpkgs/archive/%s.tar.gz" % RULES_TWEAG_COMMIT],
-)
-
-load(
-    "@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl",
-    "rules_nixpkgs_dependencies",
-)
-
-rules_nixpkgs_dependencies()
-
-load(
-    "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
-    "nixpkgs_local_repository",
-    "nixpkgs_package",
-)
-
-nixpkgs_local_repository(
-    name = "nixpkgs",
-    nix_file = "//nix/nixpkgs:default.nix",
-)
-
 load("@io_tweag_gazelle_nix//gazelle_nix:repositories.bzl", "io_tweag_gazelle_nix_repositories")
-
 io_tweag_gazelle_nix_repositories()
 
+load("@io_tweag_gazelle_nix//gazelle_nix:deps.bzl", "io_tweag_gazelle_nix_deps")
+io_tweag_gazelle_nix_deps()
+
 load("@io_tweag_gazelle_nix//gazelle_nix:defs.bzl", "io_tweag_gazelle_nix_packages")
-
-io_tweag_gazelle_nix_packages(nixpkgs = "@nixpkgs")
-
-###############
-# Go preamble
-###############
-
-http_archive(
-    name = "io_bazel_rules_go",
-    sha256 = "f2dcd210c7095febe54b804bb1cd3a58fe8435a909db2ec04e31542631cf715c",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.31.0/rules_go-v0.31.0.zip",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.31.0/rules_go-v0.31.0.zip",
-    ],
-)
-
-load(
-    "@io_tweag_rules_nixpkgs//nixpkgs:toolchains/go.bzl",
-    "nixpkgs_go_configure",
-)
-
-nixpkgs_go_configure(repository = "@nixpkgs")
-
-load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
-
-go_rules_dependencies()
-
-####################
-# Gazelle preamble
-####################
-
-http_archive(
-    name = "bazel_gazelle",
-    sha256 = "5982e5463f171da99e3bdaeff8c0f48283a7a5f396ec5282910b9e8a49c0dd7e",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.25.0/bazel-gazelle-v0.25.0.tar.gz",
-        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.25.0/bazel-gazelle-v0.25.0.tar.gz",
-    ],
-)
-
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
-
-############################################################
-# Define your own dependencies here using go_repository.
-# Else, dependencies declared by rules_go/gazelle will be used.
-# The first declaration of an external repository "wins".
-############################################################
-
-gazelle_dependencies()
+io_tweag_gazelle_nix_defs()
