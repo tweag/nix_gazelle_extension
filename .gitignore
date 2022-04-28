@@ -10,3 +10,8 @@ crates-io.list
 *.rustfmt
 *.swp
 bazel-*
+
+.go
+.gocache
+.goroot
+.gotools
