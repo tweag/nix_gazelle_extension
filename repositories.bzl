@@ -31,6 +31,6 @@ def io_tweag_gazelle_nix_repositories():
         ],
         patches = [
             # https://github.com/bazelbuild/bazel-gazelle/issues/1217
-            "@gazelle_nix_example_vanilla//:patches/001-org_golang_x_mod.patch",
+            "@io_tweag_gazelle_nix//:patches/001-org_golang_x_mod.patch",
         ],
     )

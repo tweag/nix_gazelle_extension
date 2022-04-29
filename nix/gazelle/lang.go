@@ -1,4 +1,4 @@
-package nix
+package gazelle
 
 import (
 	"encoding/json"
@@ -72,7 +72,7 @@ func (l *nixLang) Kinds() map[string]rule.KindInfo {
 func (l *nixLang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
-			Name: "@io_tweag_gazelle_nix//gazelle_nix:nix_exporter.bzl",
+			Name: "@io_tweag_gazelle_nix//nix:defs.bzl",
 			Symbols: []string{
 				exportRule,
 			},
