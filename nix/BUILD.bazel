@@ -1,7 +1,7 @@
 exports_files(
     [
         "fptrace.nix",
-        "nixpkgs-stable.nix",
-        "nixpkgs-stable.json",
+        "nixpkgs.nix",
+        "nixpkgs.json",
     ],
 )

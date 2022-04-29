@@ -1,10 +1,10 @@
-{ pkgs ? import ./nix/nixpkgs-stable.nix { } }:
+{ pkgs ? import ./nix/nixpkgs.nix { } }:
 
 with pkgs;
 
 mkShell {
   buildInputs = [
-    bazel_4
+    bazel_5
     bazel-buildtools
     binutils
     cacert
