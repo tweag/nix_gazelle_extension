@@ -1,4 +1,4 @@
-{ pkgs ? import ./nix/nixpkgs.nix { } }:
+{ pkgs ? import ./third_party/nix/nixpkgs.nix { } }:
 
 with pkgs;
 
@@ -8,7 +8,7 @@ mkShell {
     bazel-buildtools
     binutils
     cacert
-    go
+    go_1_18
     go-tools
     nix
     nixfmt
@@ -17,14 +17,14 @@ mkShell {
     less
   ];
   shellHook = ''
-    mkdir -p $(pwd)/gazelle_nix/.go
-    mkdir -p $(pwd)/gazelle_nix/.gocache
-    ln -fs ${pkgs.go}/share/go $(pwd)/gazelle_nix/.goroot
-    ln -fs ${pkgs.go-tools} $(pwd)/gazelle_nix/.gotools
+    mkdir -p $(pwd)/.go
+    mkdir -p $(pwd)/.gocache
+    ln -fs ${pkgs.go}/share/go $(pwd)/.goroot
+    ln -fs ${pkgs.go-tools} $(pwd)/.gotools
 
     export GO11MODULE=on
-    export GOCACHE=$(pwd)/gazelle_nix/.gocache
-    export GOPATH=$(pwd)/gazelle_nix/.go
+    export GOCACHE=$(pwd)/.gocache
+    export GOPATH=$(pwd)/.go
 
     # Making VSCode Go extension happy
     # (Installing latest staticcheck fails)

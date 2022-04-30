@@ -1,12 +1,12 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
-    name = "nix",
+    name = "gazelle",
     srcs = [
         "lang.go",
     ],
     data = ["@fptrace//:bin/fptrace"],
-    importpath = "github.com/tweag/nix_gazelle_extension/gazelle_nix",
+    importpath = "github.com/tweag/nix_gazelle_extension/nix/gazelle",
     visibility = ["//visibility:public"],
     deps = [
         "@bazel_gazelle//config:go_default_library",

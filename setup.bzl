@@ -1,4 +1,3 @@
-load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load(
     "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
@@ -10,7 +9,7 @@ load(
     "nixpkgs_go_configure",
 )
 
-def io_tweag_gazelle_nix_defs(nixpkgs = None, get_go_from_nix = True):
+def io_tweag_gazelle_nix_setup(nixpkgs = None, get_go_from_nix = True):
     """ Final initialization of gazelle nix dependencies.
 
     Why deps.bzl and defs.bzl are not defined together, I hear you ask?
@@ -25,9 +24,9 @@ def io_tweag_gazelle_nix_defs(nixpkgs = None, get_go_from_nix = True):
         nixpkgs = "@io_tweag_gazelle_nix_nixpkgs"
         nixpkgs_local_repository(
             name = nixpkgs[1:],
-            nix_file = "@io_tweag_gazelle_nix//nix:nixpkgs-stable.nix",
+            nix_file = "@io_tweag_gazelle_nix//third_party/nix:nixpkgs.nix",
             nix_file_deps = [
-                "@io_tweag_gazelle_nix//nix:nixpkgs-stable.json",
+                "@io_tweag_gazelle_nix//third_party/nix:nixpkgs.json",
             ],
         )
 
@@ -40,6 +39,6 @@ def io_tweag_gazelle_nix_defs(nixpkgs = None, get_go_from_nix = True):
 
     nixpkgs_package(
         name = "fptrace",
-        nix_file = "@io_tweag_gazelle_nix//nix:fptrace.nix",
+        nix_file = "@io_tweag_gazelle_nix//third_party/nix:fptrace.nix",
         repository = nixpkgs,
     )

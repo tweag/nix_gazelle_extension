@@ -1,17 +1,15 @@
-workspace(name = "gazelle_nix_example")
-
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+workspace(name = "gazelle_nix_example_vanilla")
 
 local_repository(
     name = "io_tweag_gazelle_nix",
     path = "../..",
 )
 
-load("@io_tweag_gazelle_nix//gazelle_nix:repositories.bzl", "io_tweag_gazelle_nix_repositories")
+load("@io_tweag_gazelle_nix//:repositories.bzl", "io_tweag_gazelle_nix_repositories")
 io_tweag_gazelle_nix_repositories()
 
-load("@io_tweag_gazelle_nix//gazelle_nix:deps.bzl", "io_tweag_gazelle_nix_deps")
+load("@io_tweag_gazelle_nix//:deps.bzl", "io_tweag_gazelle_nix_deps")
 io_tweag_gazelle_nix_deps()
 
-load("@io_tweag_gazelle_nix//gazelle_nix:defs.bzl", "io_tweag_gazelle_nix_packages")
-io_tweag_gazelle_nix_defs()
+load("@io_tweag_gazelle_nix//:setup.bzl", "io_tweag_gazelle_nix_setup")
+io_tweag_gazelle_nix_setup()
