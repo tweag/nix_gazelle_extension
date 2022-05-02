@@ -9,6 +9,7 @@ go_library(
     importpath = "github.com/tweag/nix_gazelle_extension/nix/gazelle",
     visibility = ["//visibility:public"],
     deps = [
+        "//nix/gazelle/private/logconfig",
         "@bazel_gazelle//config:go_default_library",
         "@bazel_gazelle//label:go_default_library",
         "@bazel_gazelle//language:go_default_library",
@@ -19,5 +20,6 @@ go_library(
         "@bazel_gazelle//rule:go_default_library",
         "@bazel_gazelle//walk:go_default_library",
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+	"@com_github_rs_zerolog//:zerolog",
     ],
 )

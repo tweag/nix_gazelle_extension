@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/tweag/nix_gazelle_extension/nix/gazelle/private/logconfig"
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/language"
@@ -24,6 +25,7 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	"github.com/bazelbuild/bazel-gazelle/walk"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -37,11 +39,25 @@ var (
 	errParse  = errors.New("directive parsing failed")
 )
 
-type nixLang struct{}
+type nixLang struct{
+	logger zerolog.Logger
+}
 
 // NewLanguage implementation.
 func NewLanguage() language.Language {
-	nl := nixLang{}
+
+	logLevel := logconfig.LogLevel()
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).
+		With().
+		Timestamp().
+		Caller().
+		Logger().
+		Level(logLevel)
+	logger.Debug().Msg("creating nix language")
+
+	nl := nixLang{
+		logger: logger,
+	}
 
 	return &nl
 }
@@ -121,11 +137,15 @@ func (l *nixLang) GenerateRules(
 		}
 
 		pth := filepath.Join(args.Dir, sourceFile)
-		log.Printf("parsing nix file: path=%q", pth)
+		l.logger.Info().
+			Str("path", pth).
+			Msg("parsing nix file")
 
 		nixFileDep, err := nixToDepSets(nixPreludeConf, pth)
 		if err != nil {
-			log.Printf("failed parsing nix file: path=%q", pth)
+			l.logger.Error().
+				Str("path", pth).
+				Msg("parsing nix file failed")
 
 			continue
 		}
