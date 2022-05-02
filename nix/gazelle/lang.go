@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime/debug"
 	"sort"
 	"strings"
 
@@ -122,7 +121,10 @@ func (l *nixLang) GenerateRules(
 	nixConfig, ok := args.Config.Exts[nixName].(Config)
 
 	if !ok {
-		panic(fmt.Errorf("%w", errAssert))
+		l.logger.Fatal().
+			Err(errAssert).
+			Str("config", nixName).
+			Msgf("Cannot extract directive %s", nixName)
 	}
 
 	nixPreludeConf := nixConfig.NixPrelude
@@ -141,12 +143,8 @@ func (l *nixLang) GenerateRules(
 			Str("path", pth).
 			Msg("parsing nix file")
 
-		nixFileDep, err := nixToDepSets(nixPreludeConf, pth)
+		nixFileDep, err := nixToDepSets(l.logger, nixPreludeConf, pth)
 		if err != nil {
-			l.logger.Error().
-				Str("path", pth).
-				Msg("parsing nix file failed")
-
 			continue
 		}
 
@@ -300,7 +298,7 @@ type Config struct {
 // f is the build file for the current directory or nil if there is no
 // existing build file.
 
-func (*nixLang) Configure(extensionConfig *config.Config, rel string, buildFile *rule.File) {
+func (l *nixLang) Configure(extensionConfig *config.Config, rel string, buildFile *rule.File) {
 	if buildFile == nil {
 		return
 	}
@@ -323,14 +321,14 @@ func (*nixLang) Configure(extensionConfig *config.Config, rel string, buildFile 
 		case "nix_prelude":
 			extraConfig.NixPrelude = directive.Value
 		case "nix_repositories":
-			parseNixRepositories(&extraConfig, directive.Value)
+			parseNixRepositories(l.logger, &extraConfig, directive.Value)
 		}
 	}
 
 	extensionConfig.Exts[nixName] = extraConfig
 }
 
-func parseNixRepositories(nixconfig *Config, value string) {
+func parseNixRepositories(logger zerolog.Logger, nixconfig *Config, value string) {
 	const parts = 2
 
 	pairs := strings.Split(value, " ")
@@ -340,8 +338,13 @@ func parseNixRepositories(nixconfig *Config, value string) {
 		keyValuePair = append(keyValuePair, strings.Split(key, "=")...)
 	}
 
+	directive := "nix_repositories"
 	if len(keyValuePair)%2 != 0 {
-		panic(fmt.Errorf("%w: %s", errParse, value))
+		logger.Panic().
+			Err(errParse).
+			Str("value", value).
+			Str("directive", directive).
+			Msgf("Cannot parse %s directive, invalid value %s", directive, value)
 	}
 
 	for i := 0; i < len(keyValuePair); i += 2 {
@@ -496,17 +499,22 @@ type DepSet struct {
 // Nix2BuildPath path to a nix evaluator binary.
 const Nix2BuildPath = "external/fptrace/bin/fptrace"
 
-func nixToDepSets(nixPrelude, nixFile string) (*DepSets, error) {
+func nixToDepSets(logger zerolog.Logger, nixPrelude, nixFile string) (*DepSets, error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
 	scanNix, err := bazel.Runfile(Nix2BuildPath)
 	if err != nil {
-		log.Fatal(err)
+		logger.Panic().
+			Err(err).
+			Str("runfile", Nix2BuildPath).
+			Msgf("fptrace runfile not found %s", Nix2BuildPath)
 	}
 
 	tmpfile, err := ioutil.TempFile("", "nix-gzl*.json")
 	if err != nil {
-		log.Fatal(err)
+		logger.Panic().
+			Err(err).
+			Msgf("could not create fptrace output file")
 	}
 
 	defer tmpfile.Close()
@@ -531,15 +539,18 @@ func nixToDepSets(nixPrelude, nixFile string) (*DepSets, error) {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf(
-			"\033[31m" + string(
-				out,
-			) + "\n" + string(
-				debug.Stack(),
-			) + "\033[0m",
-		)
+		details := strings.Split(string(out[:]), "\n")
+		details = details[:len(details)-1]
+		logger.Error().
+			Err(err).
+			Str("path", nixFile).
+			Msg("evaluation of nix expression failed")
 
-		return nil, fmt.Errorf("evaluation of nix expression failed: %w", err)
+		for i := range details {
+			logger.Error().Msg(details[i])
+		}
+
+		return nil, err
 	}
 
 	var traceOuts []TraceOut
@@ -548,7 +559,11 @@ func nixToDepSets(nixPrelude, nixFile string) (*DepSets, error) {
 	err = json.Unmarshal(byteValue, &traceOuts)
 
 	if err != nil {
-		return nil, fmt.Errorf("unmarshaling of trace output failed: %w", err)
+		logger.Error().
+			Err(err).
+			Str("path", nixFile).
+			Msg("unmarshaling of trace output failed")
+		return nil, err
 	}
 
 	filteredFiles := []string{nixFile}
