@@ -95,7 +95,7 @@ func (l *nixLang) Loads() []rule.LoadInfo {
 		{
 			Name: "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
 			Symbols: []string{
-				"nixpkgs_package",
+				packageRule,
 			},
 		},
 	}
@@ -448,7 +448,7 @@ func (l *nixLang) UpdateRepos(
 	repoRuleStatements := make([]*rule.Rule, len(packageList))
 
 	for idx, pkg := range packageList {
-		ruleStatement := rule.NewRule("nixpkgs_package", pkg.Name)
+		ruleStatement := rule.NewRule(packageRule, pkg.Name)
 		ruleStatement.SetAttr("nix_file", pkg.NixFile)
 		ruleStatement.SetAttr("nixopts", pkg.NixOpts)
 		ruleStatement.SetAttr("nix_file_deps", pkg.NixFileDeps)
