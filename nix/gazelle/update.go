@@ -14,15 +14,6 @@ import (
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/nixconfig"
 )
 
-type nixWorkspaceLibrary struct {
-	Name         string
-	NixFile      string
-	BuildFile    string
-	NixFileDeps  []string
-	Repositories map[string]string
-	NixOpts      []string
-}
-
 func (nixLang *nixLang) UpdateRepos(
 	args language.UpdateReposArgs,
 ) language.UpdateReposResult {
@@ -63,7 +54,7 @@ func (nixLang *nixLang) UpdateRepos(
 		ruleStatement.SetAttr("nix_file", pkg.NixFile)
 		ruleStatement.SetAttr("nixopts", pkg.NixOpts)
 		ruleStatement.SetAttr("nix_file_deps", pkg.NixFileDeps)
-		ruleStatement.SetAttr("repositories", nixRepositoriesConf)
+		ruleStatement.SetAttr("repositories", nixRepositoriesConf) //TODO: read from pkg, not global conf.
 
 		if len(pkg.BuildFile) > 0 {
 			ruleStatement.SetAttr("build_file", pkg.BuildFile)
@@ -83,8 +74,8 @@ func collectDependenciesFromRepo(
 	logger *zerolog.Logger,
 	extensionConfig *config.Config,
 	lang language.Language,
-) []nixWorkspaceLibrary {
-	packages := make([]nixWorkspaceLibrary, 0)
+) []nixPackage {
+	packages := make([]nixPackage, 0)
 	cexts := []config.Configurer{
 		&config.CommonConfigurer{},
 		&walk.Configurer{},
@@ -135,16 +126,16 @@ func initUpdateReposConfig(logger *zerolog.Logger, extensionConfig *config.Confi
 
 func collectDependenciesFromFile(
 	buildFile *rule.File,
-	packages *[]nixWorkspaceLibrary,
+	packages *[]nixPackage,
 ) {
 
 	if buildFile != nil {
 		for _, ruleStatement := range buildFile.Rules {
 			if ruleStatement.Kind() == exportRule {
-				pkg := nixWorkspaceLibrary{
+				pkg := nixPackage{
 					Name:         ruleStatement.AttrString("name"),
 					NixFile:      ruleStatement.AttrString("nix_file"),
-					NixFileDeps:  ruleStatement.AttrStrings("deps"),
+					NixFileDeps:  ruleStatement.AttrStrings("nix_file_deps"),
 					NixOpts:      ruleStatement.AttrStrings("nixopts"),
 					BuildFile:    ruleStatement.AttrString("build_file"),
 					Repositories: make(map[string]string),
