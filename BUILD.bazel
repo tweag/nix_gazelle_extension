@@ -1,9 +1,23 @@
-load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
+load(
+    "@bazel_gazelle//:def.bzl",
+    "DEFAULT_LANGUAGES",
+    "gazelle",
+    "gazelle_binary",
+)
 
-# bazel run //:gazelle_go -- update-repos \
-#    -from_file=go.mod \
-#    -prune \
-#    -to_macro "third_party/go/repositories.bzl%go_deps"
+gazelle_binary(
+    name = "gazelle_binary",
+    languages = DEFAULT_LANGUAGES
+)
+
 gazelle(
     name = "gazelle_go",
+    command = "update-repos",
+    extra_args = [
+        "-from_file=go.mod",
+        "-prune",
+	"-to_macro",
+	"third_party/go/repositories.bzl%go_deps",
+    ],
+    gazelle = "//:gazelle_binary",
 )
