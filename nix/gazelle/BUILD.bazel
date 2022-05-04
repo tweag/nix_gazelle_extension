@@ -9,6 +9,7 @@ go_library(
         "generate.go",
         "kinds.go",
         "lang.go",
+        "update.go",
         "resolve.go",
     ],
     data = ["@fptrace//:bin/fptrace"],
