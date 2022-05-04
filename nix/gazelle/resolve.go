@@ -28,18 +28,18 @@ func (Resolver) Name() string {
 // If nil is returned, the rule will not be indexed. If any non-nil
 // slice is returned, including an empty slice, the rule will be
 // indexed.
-func (nr Resolver) Imports(
+func (nixLangResolver Resolver) Imports(
 	extensionConfig *config.Config,
 	ruleStatement *rule.Rule,
 	buildFile *rule.File,
 ) []resolve.ImportSpec {
-	log := nr.lang.logger.With().
+	logger := nixLangResolver.lang.logger.With().
 		Str("step", "gazelle.nixLang.Resolver.Imports").
 		Str("path", buildFile.Pkg).
 		Str("rule", ruleStatement.Name()).
 		Logger()
 
-	log.Debug().Msg("")
+	logger.Debug().Msg("")
 
 	var prefix string
 
@@ -72,10 +72,10 @@ func (Resolver) Embeds(r *rule.Rule, from label.Label) []label.Label {
 // equivalent) for each import according to language-specific rules
 // and heuristics.
 func (Resolver) Resolve(
-	c *config.Config,
-	ix *resolve.RuleIndex,
-	rc *repo.RemoteCache,
-	r *rule.Rule,
+	config *config.Config,
+	ruleIndex *resolve.RuleIndex,
+	remoteCache *repo.RemoteCache,
+	rule *rule.Rule,
 	importsRaw interface{},
 	from label.Label,
 ) {

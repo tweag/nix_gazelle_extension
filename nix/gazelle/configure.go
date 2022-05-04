@@ -6,6 +6,7 @@ import (
 
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/rule"
+	"github.com/rs/zerolog"
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/nixconfig"
 )
 
@@ -21,16 +22,16 @@ func NewConfigurer(lang *nixLang) *Configurer {
 // extension. This method is called once with the root configuration
 // when Gazelle starts. RegisterFlags may set an initial values in
 // Config.Exts. When flags are set, they should modify these values.
-func (nc Configurer) RegisterFlags(
-	fs *flag.FlagSet,
+func (nixLangConfigurer Configurer) RegisterFlags(
+	flagSet *flag.FlagSet,
 	cmd string,
-	c *config.Config,
+	config *config.Config,
 ) {
 }
 
-func (jc *Configurer) CheckFlags(
-	fs *flag.FlagSet,
-	c *config.Config,
+func (nixLangConfigurer *Configurer) CheckFlags(
+	flagSet *flag.FlagSet,
+	config *config.Config,
 ) error {
 	return nil
 }
@@ -38,7 +39,7 @@ func (jc *Configurer) CheckFlags(
 // KnownDirectives returns a list of directive keys that this
 // Configurer can interpret. Gazelle prints errors for directives that
 // are not recoginized by any Configurer.
-func (nc *Configurer) KnownDirectives() []string {
+func (nixLangConfigurer *Configurer) KnownDirectives() []string {
 	return []string{
 		nixconfig.NixPrelude,
 		nixconfig.NixRepositories,
@@ -58,36 +59,36 @@ func (nc *Configurer) KnownDirectives() []string {
 // f is the build file for the current directory or nil if there is no
 // existing build file.
 
-func (nc *Configurer) Configure(c *config.Config, relative string, buildFile *rule.File) {
-	log := nc.lang.logger.With().
+func (nixLangConfigurer *Configurer) Configure(config *config.Config, relative string, buildFile *rule.File) {
+	logger := nixLangConfigurer.lang.logger.With().
 		Str("step", "gazelle.nixLang.Configurer.Configure").
 		Str("path", relative).
 		Logger()
 
-	log.Debug().Msg("")
+	logger.Debug().Msg("")
 
-	if _, exists := c.Exts[languageName]; !exists {
-		c.Exts[languageName] = nixconfig.Configs{
+	if _, exists := config.Exts[languageName]; !exists {
+		config.Exts[languageName] = nixconfig.Configs{
 			"": nixconfig.New(),
 		}
 	}
-	cfgs := c.Exts[languageName].(nixconfig.Configs)
-	if _, exists := cfgs[relative]; !exists {
-		cfgs[relative] = nixconfig.New()
+	nixConfigs := config.Exts[languageName].(nixconfig.Configs)
+	if _, exists := nixConfigs[relative]; !exists {
+		nixConfigs[relative] = nixconfig.New()
 	}
 	if buildFile != nil {
 		for _, directive := range buildFile.Directives {
 			switch directive.Key {
 			case nixconfig.NixPrelude:
-				cfgs[relative].SetNixPrelude(directive.Value)
+				nixConfigs[relative].SetNixPrelude(directive.Value)
 			case nixconfig.NixRepositories:
-				parseNixRepositories(nc, cfgs[relative], directive.Value)
+				parseNixRepositories(&logger, nixConfigs[relative], directive.Value)
 			}
 		}
 	}
 }
 
-func parseNixRepositories(nc *Configurer, nixConfig *nixconfig.Config, value string) {
+func parseNixRepositories(logger *zerolog.Logger, nixConfig *nixconfig.Config, value string) {
 	const parts = 2
 
 	pairs := strings.Split(value, " ")
@@ -98,7 +99,7 @@ func parseNixRepositories(nc *Configurer, nixConfig *nixconfig.Config, value str
 	}
 
 	if len(keyValuePair)%2 != 0 {
-		nc.lang.logger.Panic().
+		logger.Panic().
 			Err(errParse).
 			Str("value", value).
 			Str("directive", nixconfig.NixRepositories).

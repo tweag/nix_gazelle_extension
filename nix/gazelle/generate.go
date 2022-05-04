@@ -37,27 +37,27 @@ import (
 //
 // Any non-fatal errors this function encounters should be logged using
 // log.Print.
-func (l *nixLang) GenerateRules(
+func (nixLang *nixLang) GenerateRules(
 	args language.GenerateArgs,
 ) language.GenerateResult {
-	log := l.logger.With().
+	logger := nixLang.logger.With().
 		Str("step", "gazelle.nixLang.GenerateRules").
 		Str("path", args.Rel).
 		Str("config", languageName).
 		Logger()
 
-	log.Debug().Msg("")
+	logger.Debug().Msg("")
 	nixConfigs, ok := args.Config.Exts[languageName].(nixconfig.Configs)
 
 	if !ok {
-		log.Fatal().
+		logger.Fatal().
 			Err(errAssert).
 			Msgf("Cannot extract configs")
 	}
 	cfg, ok := nixConfigs[args.Rel]
 
 	if !ok {
-		log.Fatal().
+		logger.Fatal().
 			Err(errAssert).
 			Msgf("Cannot extract config")
 	}
@@ -68,7 +68,7 @@ func (l *nixLang) GenerateRules(
 	nixFilesDeps := make(map[string]*DepSets)
 
 	for _, sourceFile := range append(args.RegularFiles, args.GenFiles...) {
-		log.Trace().
+		logger.Trace().
 			Str("source", sourceFile).
 			Msg("considering")
 
@@ -76,12 +76,12 @@ func (l *nixLang) GenerateRules(
 			continue
 		}
 
-		log.Info().
+		logger.Info().
 			Str("file", sourceFile).
 			Msg("parsing nix file")
 
 		pth := filepath.Join(args.Dir, sourceFile)
-		nixFileDep, err := nixToDepSets(l.logger, nixPreludeConf, pth)
+		nixFileDep, err := nixToDepSets(&logger, nixPreludeConf, pth)
 		if err != nil {
 			continue
 		}
@@ -163,10 +163,10 @@ type nixWorkspaceLibrary struct {
 	BuildFile    string
 }
 
-func (l *nixLang) UpdateRepos(
+func (nixLang *nixLang) UpdateRepos(
 	args language.UpdateReposArgs,
 ) language.UpdateReposResult {
-	packageList := collectDependenciesFromRepo(args.Config, l)
+	packageList := collectDependenciesFromRepo(args.Config, nixLang)
 	nixConfig, ok := args.Config.Exts[languageName].(nixconfig.Configs)
 
 	if !ok {
@@ -240,7 +240,7 @@ type DepSet struct {
 // Nix2BuildPath path to a nix evaluator binary.
 const Nix2BuildPath = "external/fptrace/bin/fptrace"
 
-func nixToDepSets(logger zerolog.Logger, nixPrelude, nixFile string) (*DepSets, error) {
+func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (*DepSets, error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
 	scanNix, err := bazel.Runfile(Nix2BuildPath)
