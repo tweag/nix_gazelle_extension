@@ -3,12 +3,17 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "gazelle",
     srcs = [
+        "configure.go",
+        "constants.go",
+        "generate.go",
         "lang.go",
+        "resolve.go",
     ],
     data = ["@fptrace//:bin/fptrace"],
     importpath = "github.com/tweag/nix_gazelle_extension/nix/gazelle",
     visibility = ["//visibility:public"],
     deps = [
+        "//nix/gazelle/nixconfig",
         "//nix/gazelle/private/logconfig",
         "@bazel_gazelle//config:go_default_library",
         "@bazel_gazelle//label:go_default_library",
@@ -20,6 +25,6 @@ go_library(
         "@bazel_gazelle//rule:go_default_library",
         "@bazel_gazelle//walk:go_default_library",
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",
-	"@com_github_rs_zerolog//:zerolog",
+        "@com_github_rs_zerolog//:zerolog",
     ],
 )

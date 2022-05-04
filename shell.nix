@@ -19,7 +19,7 @@ mkShell {
   shellHook = ''
     mkdir -p $(pwd)/.go
     mkdir -p $(pwd)/.gocache
-    ln -fs ${pkgs.go}/share/go $(pwd)/.goroot
+    ln -fs ${pkgs.go_1_18}/share/go $(pwd)/.goroot
     ln -fs ${pkgs.go-tools} $(pwd)/.gotools
 
     export GO11MODULE=on

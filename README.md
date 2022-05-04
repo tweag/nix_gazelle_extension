@@ -1,7 +1,7 @@
 ```
 nix-shell
-cd examples/readtree
-bazel run //:gazelle-update
-bazel run //:gazelle-update-repos
+cd examples/vanilla
+GAZELLE_LANGUAGES_NIX_LOG_LEVEL=debug bazel run //:gazelle-update
+GAZELLE_LANGUAGES_NIX_LOG_LEVEL=debug bazel run //:gazelle-update-repos
 git status
 ```
