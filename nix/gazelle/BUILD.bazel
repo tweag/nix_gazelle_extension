@@ -5,7 +5,9 @@ go_library(
     srcs = [
         "configure.go",
         "constants.go",
+        "fix.go",
         "generate.go",
+        "kinds.go",
         "lang.go",
         "resolve.go",
     ],
