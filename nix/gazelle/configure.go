@@ -67,17 +67,28 @@ func (nixLangConfigurer *Configurer) Configure(config *config.Config, relative s
 
 	logger.Debug().Msg("")
 
+	// root config
 	if _, exists := config.Exts[languageName]; !exists {
 		config.Exts[languageName] = nixconfig.Configs{
 			"": nixconfig.New(),
 		}
 	}
+
 	nixConfigs := config.Exts[languageName].(nixconfig.Configs)
-	if _, exists := nixConfigs[relative]; !exists {
-		nixConfigs[relative] = nixconfig.New()
+	cfg, exists := nixConfigs[relative]
+
+	if !exists {
+		logger.Trace().Msg("creating config")
+		parent := nixConfigs.ParentForPackage(relative)
+		cfg = parent.NewChild()
+		nixConfigs[relative] = cfg
 	}
 	if buildFile != nil {
 		for _, directive := range buildFile.Directives {
+			logger.Trace().
+				Str("directive", directive.Key).
+				Str("value", directive.Value).
+				Msgf("setting config %s, using value %s", directive.Key, directive.Value)
 			switch directive.Key {
 			case nixconfig.NixPrelude:
 				nixConfigs[relative].SetNixPrelude(directive.Value)

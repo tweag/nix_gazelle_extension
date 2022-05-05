@@ -26,7 +26,7 @@ func (nixLang *nixLang) UpdateRepos(
 	logger.Debug().Msg("")
 
 	packageList := collectDependenciesFromRepo(&logger, args.Config, nixLang)
-	nixConfig, ok := args.Config.Exts[languageName].(nixconfig.Configs)
+	nixConfigs, ok := args.Config.Exts[languageName].(nixconfig.Configs)
 
 	if !ok {
 		return language.UpdateReposResult{
@@ -34,27 +34,24 @@ func (nixLang *nixLang) UpdateRepos(
 			Gen:   nil,
 		}
 	}
-
-	// TODO: extract repositories from a specific buildfile, not a
-	// top-level one
-	cfg, ok := nixConfig[""]
-	if !ok {
-		return language.UpdateReposResult{
-			Error: fmt.Errorf("%w %s", errAssert, "nixConfig"),
-			Gen:   nil,
-		}
-	}
-
-	nixRepositoriesConf := cfg.NixRepositories()
 
 	repoRuleStatements := make([]*rule.Rule, len(packageList))
 
 	for idx, pkg := range packageList {
+		cfg, ok := nixConfigs[pkg.rel]
+		if !ok {
+			return language.UpdateReposResult{
+				Error: fmt.Errorf("%w %s", errAssert, "nixConfig"),
+				Gen:   nil,
+			}
+		}
+		nixRepositoriesConf := cfg.NixRepositories()
+
 		ruleStatement := rule.NewRule(packageRule, pkg.name)
 		ruleStatement.SetAttr("nix_file", pkg.nixFile)
 		ruleStatement.SetAttr("nixopts", pkg.nixOpts)
 		ruleStatement.SetAttr("nix_file_deps", pkg.nixFileDeps)
-		ruleStatement.SetAttr("repositories", nixRepositoriesConf) //TODO: read from pkg, not global conf.
+		ruleStatement.SetAttr("repositories", nixRepositoriesConf)
 
 		if len(pkg.buildFile) > 0 {
 			ruleStatement.SetAttr("build_file", pkg.buildFile)
@@ -138,6 +135,7 @@ func collectDependenciesFromFile(
 					nixFileDeps:  ruleStatement.AttrStrings("nix_file_deps"),
 					nixOpts:      ruleStatement.AttrStrings("nixopts"),
 					buildFile:    ruleStatement.AttrString("build_file"),
+					rel:          ruleStatement.AttrString("rel"),
 					repositories: make(map[string]string),
 				}
 				*packages = append(*packages, pkg)
