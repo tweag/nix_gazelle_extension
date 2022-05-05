@@ -135,7 +135,7 @@ func collectDependenciesFromFile(
 					nixFileDeps:  ruleStatement.AttrStrings("nix_file_deps"),
 					nixOpts:      ruleStatement.AttrStrings("nixopts"),
 					buildFile:    ruleStatement.AttrString("build_file"),
-					rel:          ruleStatement.AttrString("rel"),
+					rel:          ruleStatement.AttrString("_rel"),
 					repositories: make(map[string]string),
 				}
 				*packages = append(*packages, pkg)
