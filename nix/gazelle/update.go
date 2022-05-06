@@ -12,6 +12,7 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	"github.com/bazelbuild/bazel-gazelle/walk"
 	"github.com/rs/zerolog"
+	"github.com/tweag/nix_gazelle_extension/nix/gazelle/nixconfig"
 )
 
 func (nixLang *nixLang) UpdateRepos(
@@ -58,10 +59,12 @@ func collectDependenciesFromRepo(
 	initUpdateReposConfig(logger, extensionConfig, cexts)
 
 	var result []*rule.Rule
+
 	walk.Walk(extensionConfig, cexts, []string{}, walk.VisitAllUpdateDirsMode, func(dir, rel string, c *config.Config, update bool, f *rule.File, subdirs, regularFiles, genFiles []string) {
 		// Generate rules.
 		var empty, gen []*rule.Rule
 		var imports []interface{}
+
 		res := lang.GenerateRules(language.GenerateArgs{
 			Config:       c,
 			Dir:          dir,
@@ -94,6 +97,15 @@ func collectDependenciesFromRepo(
 }
 
 func initUpdateReposConfig(logger *zerolog.Logger, extensionConfig *config.Config, cexts []config.Configurer) {
+	// root config
+	if _, exists := extensionConfig.Exts[languageName]; !exists {
+		extensionConfig.Exts[languageName] = nixconfig.Configs{
+			"": nixconfig.New(),
+		}
+	}
+
+	extensionConfig.Exts[languageName].(nixconfig.Configs)[""].SetWsMode(true)
+
 	flagSet := flag.NewFlagSet("updateReposFlagSet", flag.ContinueOnError)
 
 	for _, cext := range cexts {

@@ -17,6 +17,7 @@ type Config struct {
 
 	nixPrelude      string
 	nixRepositories map[string]string
+	wsmode          bool
 }
 
 // NewChild creates a new child Config. It inherits desired values from the
@@ -26,6 +27,7 @@ func (c *Config) NewChild() *Config {
 		parent:          c,
 		nixPrelude:      c.nixPrelude,
 		nixRepositories: c.nixRepositories,
+		wsmode:          c.wsmode,
 	}
 }
 
@@ -34,6 +36,7 @@ func New() *Config {
 	return &Config{
 		nixPrelude:      "",
 		nixRepositories: make(map[string]string),
+		wsmode:          false,
 	}
 }
 
@@ -61,4 +64,12 @@ func (c *Config) SetNixRepositories(repositories map[string]string) {
 
 func (c Config) NixRepositories() map[string]string {
 	return c.nixRepositories
+}
+
+func (c *Config) SetWsMode(wsmode bool) {
+	c.wsmode = wsmode
+}
+
+func (c Config) WsMode() bool {
+	return c.wsmode
 }
