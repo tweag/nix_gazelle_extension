@@ -83,11 +83,7 @@ func collectDependenciesFromRepo(
 		}
 
 		for _, ruleStatement := range res.Gen {
-			if ruleStatement.Kind() == exportRule {
-				// TODO: instead of modyfying in-memory generated rule
-				// split it into two structs, one for nixpkgs_package, and nix_export
-				ruleStatement.SetKind(packageRule)
-				ruleStatement.DelAttr("files")
+			if ruleStatement.Kind() == packageRule {
 				result = append(result, ruleStatement)
 			}
 		}
