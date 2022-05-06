@@ -3,6 +3,8 @@ package gazelle
 import (
 	"flag"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/language"
@@ -61,10 +63,20 @@ func (nixLang *nixLang) UpdateRepos(
 		repoRuleStatements[idx] = ruleStatement
 	}
 
+	sortRules(repoRuleStatements)
 	return language.UpdateReposResult{
 		Error: nil,
 		Gen:   repoRuleStatements,
 	}
+}
+
+func sortRules(rules []*rule.Rule) {
+	sort.SliceStable(rules, func(i, j int) bool {
+		if cmp := strings.Compare(rules[i].Name(), rules[j].Name()); cmp != 0 {
+			return cmp < 0
+		}
+		return rules[i].AttrString("name") < rules[j].AttrString("name")
+	})
 }
 
 func collectDependenciesFromRepo(
@@ -90,7 +102,7 @@ func collectDependenciesFromRepo(
 		walk.VisitAllUpdateDirsMode,
 		func(
 			_,
-			_ string,
+			rel string,
 			_ *config.Config,
 			_ bool,
 			buildFile *rule.File,
@@ -98,7 +110,7 @@ func collectDependenciesFromRepo(
 			_,
 			_ []string,
 		) {
-			collectDependenciesFromFile(buildFile, &packages)
+			collectDependenciesFromFile(buildFile, rel, &packages)
 		},
 	)
 
@@ -123,6 +135,7 @@ func initUpdateReposConfig(logger *zerolog.Logger, extensionConfig *config.Confi
 
 func collectDependenciesFromFile(
 	buildFile *rule.File,
+	rel string,
 	packages *[]nixPackage,
 ) {
 	// Translate to repository rules.
@@ -135,7 +148,7 @@ func collectDependenciesFromFile(
 					nixFileDeps:  ruleStatement.AttrStrings("nix_file_deps"),
 					nixOpts:      ruleStatement.AttrStrings("nixopts"),
 					buildFile:    ruleStatement.AttrString("build_file"),
-					rel:          ruleStatement.AttrString("_rel"),
+					rel:          rel,
 					repositories: make(map[string]string),
 				}
 				*packages = append(*packages, pkg)
