@@ -105,6 +105,8 @@ func (nixLang *nixLang) GenerateRules(
 			nixOpts = []string{}
 		}
 
+		// TODO: instead of using template file
+		// use already existing/generated one.
 		bzlTemplate := strings.ReplaceAll(
 			nixFiles[nixFile],
 			"default.nix",
