@@ -13,7 +13,7 @@ type NixRuleArgs struct {
 }
 
 func genNixRule(args *NixRuleArgs) *rule.Rule {
-	r := rule.NewRule(packageRule, args.kind)
+	r := rule.NewRule(args.kind, "")
 	for k, v := range args.attrs {
 		r.SetAttr(k, v)
 	}

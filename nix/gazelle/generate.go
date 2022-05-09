@@ -1,6 +1,7 @@
 package gazelle
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -59,7 +60,7 @@ func (nixLang *nixLang) GenerateRules(
 			Str("source", sourceFile).
 			Msg("considering")
 
-		if !strings.HasSuffix(sourceFile, "default.nix") {
+		if sourceFile != "default.nix" {
 			continue
 		}
 
@@ -78,31 +79,24 @@ func (nixLang *nixLang) GenerateRules(
 
 		pkgName := strings.ReplaceAll(args.Rel, "/", ".")
 
-		var tgtName string
+		// TODO: instead of using template file
+		// use already existing/generated one.
+		bzlTemplate := strings.ReplaceAll(
+			sourceFile,
+			"default.nix",
+			"BUILD.bazel.tpl",
+		)
 
-		var nixOpts []string
-
-		if len(nixPreludeConf) > 0 {
-			tgtName = "//:" + nixPreludeConf
-			nixOpts = []string{
-				"--argstr",
-				"nix_file",
-				args.Rel + "/default.nix",
-			}
-		} else {
-			tgtName = "//" + args.Rel + ":default.nix"
-			nixOpts = []string{}
-		}
+		var buildFile string
+		buildFile = fmt.Sprintf("//%s:BUILD.bazel.tpl", args.Rel)
 
 		var nra *NixRuleArgs
 		if cfg.WsMode() {
 			nra = &NixRuleArgs{
-				kind: "nixpkgs_package",
+				kind: packageRule,
 				attrs: map[string]interface{}{
 					"name":          pkgName,
-					"nix_file":      tgtName,
 					"nix_file_deps": nixFileDep.DepSets[0].Files,
-					"nix_opts":      nixOpts,
 					"repositories":  nixRepositoriesConf,
 				},
 				comments: []string{
@@ -110,28 +104,30 @@ func (nixLang *nixLang) GenerateRules(
 				},
 			}
 
-			// TODO: instead of using template file
-			// use already existing/generated one.
-			bzlTemplate := strings.ReplaceAll(
-				sourceFile,
-				"default.nix",
-				"BUILD.bazel.tpl",
-			)
-
-			var buildFile string
+			if len(nixPreludeConf) > 0 {
+				nra.attrs["nix_file"] = fmt.Sprintf("//:%s", nixPreludeConf)
+				nra.attrs["nix_opts"] = []string{
+					"--argstr",
+					"nix_file",
+					filepath.Join(args.Rel, sourceFile),
+				}
+			} else {
+				nra.attrs["nix_file"] = fmt.Sprintf("//%s:%s", args.Rel, sourceFile)
+			}
 
 			if fileExists(bzlTemplate) {
-				buildFile = "//" + args.Rel + ":BUILD.bazel.tpl"
-				nixFileDep.DepSets[1].Files = append(
-					nixFileDep.DepSets[1].Files,
-					buildFile,
-				)
 				nra.attrs["build_file"] = buildFile
 			}
 
 		} else {
+			if fileExists(bzlTemplate) {
+				nixFileDep.DepSets[1].Files = append(
+					nixFileDep.DepSets[1].Files,
+					buildFile,
+				)
+			}
 			nra = &NixRuleArgs{
-				kind: "nix_export",
+				kind: "export_nix",
 				attrs: map[string]interface{}{
 					"name":  pkgName,
 					"files": nixFileDep.DepSets[1].Files,
