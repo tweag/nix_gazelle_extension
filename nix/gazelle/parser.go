@@ -29,18 +29,13 @@ type TraceOut struct {
 	}
 }
 
-// DepSets collection of DepSet structs.
-type DepSets struct {
-	DepSets []DepSet
-}
-
 // DepSet represents dependencies of this package.
 type DepSet struct {
 	Kind  string
 	Files []string
 }
 
-func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (*DepSets, error) {
+func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]DepSet, error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
 	scanNix, err := bazel.Runfile(nix2BuildPath)
@@ -173,7 +168,5 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (*DepSets,
 		recursive.Files = append(recursive.Files, x)
 	}
 
-	depSets := DepSets{[]DepSet{recursive, direct}}
-
-	return &depSets, nil
+	return []DepSet{recursive, direct}, nil
 }

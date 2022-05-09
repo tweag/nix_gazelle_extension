@@ -72,7 +72,7 @@ func (nixLang *nixLang) GenerateRules(
 
 		//TODO: parser should be launched only when generating
 		//workspace rules
-		nixFileDep, err := nixToDepSets(&logger, nixPreludeConf, pth)
+		depSets, err := nixToDepSets(&logger, nixPreludeConf, pth)
 		if err != nil {
 			continue
 		}
@@ -100,7 +100,7 @@ func (nixLang *nixLang) GenerateRules(
 		}
 		if cfg.WsMode() {
 			nra.kind = packageRule
-			nra.attrs["nix_file_deps"] = nixFileDep.DepSets[0].Files
+			nra.attrs["nix_file_deps"] = depSets[0].Files
 			nra.attrs["repositories"] = nixRepositoriesConf
 
 			if len(nixPreludeConf) > 0 {
@@ -120,13 +120,13 @@ func (nixLang *nixLang) GenerateRules(
 
 		} else {
 			if fileExists(bzlTemplate) {
-				nixFileDep.DepSets[1].Files = append(
-					nixFileDep.DepSets[1].Files,
+				depSets[1].Files = append(
+					depSets[1].Files,
 					buildFile,
 				)
 			}
 			nra.kind = exportRule
-			nra.attrs["files"] = nixFileDep.DepSets[1].Files
+			nra.attrs["files"] = depSets[1].Files
 		}
 		res.Gen = append(res.Gen, genNixRule(nra))
 	}
