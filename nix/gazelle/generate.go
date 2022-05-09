@@ -101,7 +101,7 @@ func (nixLang *nixLang) GenerateRules(
 		if cfg.WsMode() {
 			nra.kind = packageRule
 			nra.attrs["nix_file_deps"] = nixFileDep.DepSets[0].Files
-			nra.attrs["nix_file_deps"] = nixRepositoriesConf
+			nra.attrs["repositories"] = nixRepositoriesConf
 
 			if len(nixPreludeConf) > 0 {
 				nra.attrs["nix_file"] = fmt.Sprintf("//:%s", nixPreludeConf)
