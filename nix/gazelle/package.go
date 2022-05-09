@@ -4,8 +4,6 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/rule"
 )
 
-// FIXME: nixPackage should not carry information
-// meant for build context target(s) i.e. nix_export
 type NixRuleArgs struct {
 	attrs    map[string]interface{}
 	kind     string
