@@ -60,11 +60,9 @@ func collectDependenciesFromRepo(
 
 	var result []*rule.Rule
 
-	walk.Walk(extensionConfig, cexts, []string{}, walk.VisitAllUpdateDirsMode, func(dir, rel string, c *config.Config, update bool, f *rule.File, subdirs, regularFiles, genFiles []string) {
+	walk.Walk(extensionConfig, cexts, []string{}, walk.VisitAllUpdateDirsMode, func(dir, rel string, c *config.Config, _ bool, f *rule.File, subdirs, regularFiles, genFiles []string) {
 		// Generate rules.
 		var empty, gen []*rule.Rule
-		var imports []interface{}
-
 		res := lang.GenerateRules(language.GenerateArgs{
 			Config:       c,
 			Dir:          dir,
@@ -78,9 +76,7 @@ func collectDependenciesFromRepo(
 		if len(res.Gen) != len(res.Imports) {
 			logger.Panic().Msgf("%s: language %s generated %d rules but returned %d imports", rel, languageName, len(res.Gen), len(res.Imports))
 		}
-		empty = append(empty, res.Empty...)
 		gen = append(gen, res.Gen...)
-		imports = append(imports, res.Imports...)
 		if f == nil && len(gen) == 0 {
 			return
 		}

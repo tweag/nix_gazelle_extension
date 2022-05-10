@@ -1,6 +1,8 @@
 package nixconfig
 
-import "path/filepath"
+import (
+	"path/filepath"
+)
 
 const (
 	NixPrelude      = "nix_prelude"

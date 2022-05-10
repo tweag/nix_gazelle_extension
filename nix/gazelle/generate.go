@@ -70,8 +70,6 @@ func (nixLang *nixLang) GenerateRules(
 
 		pth := filepath.Join(args.Dir, sourceFile)
 
-		//TODO: parser should be launched only when generating
-		//workspace rules
 		depSets, err := nixToDepSets(&logger, nixPreludeConf, pth)
 		if err != nil {
 			continue
@@ -87,8 +85,7 @@ func (nixLang *nixLang) GenerateRules(
 			"BUILD.bazel.tpl",
 		)
 
-		var buildFile string
-		buildFile = fmt.Sprintf("//%s:BUILD.bazel.tpl", args.Rel)
+		buildFile := fmt.Sprintf("//%s:BUILD.bazel.tpl", args.Rel)
 
 		nra := &NixRuleArgs{
 			attrs: map[string]interface{}{
