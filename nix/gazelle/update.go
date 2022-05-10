@@ -2,6 +2,7 @@ package gazelle
 
 import (
 	"flag"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -55,6 +56,7 @@ func collectDependenciesFromRepo(
 		golang.NewLanguage(),
 		proto.NewLanguage(),
 	}
+	kinds := make(map[string]rule.KindInfo)
 
 	initUpdateReposConfig(logger, extensionConfig, cexts)
 
@@ -81,11 +83,32 @@ func collectDependenciesFromRepo(
 			return
 		}
 
+		// Apply and record relevant kind mappings.
+		var (
+			mappedKindInfo = make(map[string]rule.KindInfo)
+		)
+		for _, r := range gen {
+			if repl, ok := c.KindMap[r.Kind()]; ok {
+				mappedKindInfo[repl.KindName] = kinds[r.Kind()]
+				r.SetKind(repl.KindName)
+			}
+		}
+
+		// Insert or merge rules into the build file.
+		if f == nil {
+			f = rule.EmptyFile(filepath.Join(dir, c.DefaultBuildFileName()), rel)
+		}
+
+		// TODO: support merges
 		for _, ruleStatement := range res.Gen {
 			if ruleStatement.Kind() == packageRule {
 				result = append(result, ruleStatement)
+			} else {
+				ruleStatement.Insert(f)
 			}
 		}
+
+		f.Save(f.Path)
 	},
 	)
 
