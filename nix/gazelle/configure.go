@@ -75,13 +75,12 @@ func (nixLangConfigurer *Configurer) Configure(config *config.Config, relative s
 	}
 
 	nixConfigs := config.Exts[languageName].(nixconfig.Configs)
-	cfg, exists := nixConfigs[relative]
+	_, exists := nixConfigs[relative]
 
 	if !exists {
 		logger.Trace().Msg("creating config")
 		parent := nixConfigs.ParentForPackage(relative)
-		cfg = parent.NewChild()
-		nixConfigs[relative] = cfg
+		nixConfigs[relative] = parent.NewChild()
 	}
 	if buildFile != nil {
 		for _, directive := range buildFile.Directives {
