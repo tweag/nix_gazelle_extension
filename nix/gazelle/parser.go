@@ -29,13 +29,7 @@ type TraceOut struct {
 	}
 }
 
-// DepSet represents dependencies of this package.
-type DepSet struct {
-	Kind  string
-	Files []string
-}
-
-func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]DepSet, error) {
+func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]string, []string, error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
 	scanNix, err := bazel.Runfile(nix2BuildPath)
@@ -86,7 +80,7 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]DepSet,
 			logger.Error().Msg(details[i])
 		}
 
-		return nil, err
+		return nil, nil, err
 	}
 
 	var traceOuts []TraceOut
@@ -99,7 +93,7 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]DepSet,
 			Err(err).
 			Str("path", nixFile).
 			Msg("unmarshaling of trace output failed")
-		return nil, err
+		return nil, nil, err
 	}
 
 	filteredFiles := []string{nixFile}
@@ -132,8 +126,8 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]DepSet,
 		}
 	}
 
-	direct := DepSet{"direct", []string{}}
-	recursive := DepSet{"recursive", []string{}}
+	directDeps := []string{}
+	chainedDeps := []string{}
 	targets := []string{}
 
 	for _, consideredPackage := range packages {
@@ -162,11 +156,11 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]DepSet,
 	)
 	for _, x := range targets {
 		if strings.HasPrefix(x, nixPackage) {
-			direct.Files = append(direct.Files, x)
+			directDeps = append(directDeps, x)
 		}
 
-		recursive.Files = append(recursive.Files, x)
+		chainedDeps = append(chainedDeps, x)
 	}
 
-	return []DepSet{recursive, direct}, nil
+	return directDeps, chainedDeps, nil
 }
