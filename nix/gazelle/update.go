@@ -2,7 +2,6 @@ package gazelle
 
 import (
 	"flag"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -27,11 +26,12 @@ func (nixLang *nixLang) UpdateRepos(
 
 	logger.Debug().Msg("")
 
-	packageList := collectDependenciesFromRepo(&logger, args.Config, nixLang)
-	sortRules(packageList)
+	rules := collectDependenciesFromRepo(&logger, args.Config, nixLang)
+
+	sortRules(rules)
 	return language.UpdateReposResult{
 		Error: nil,
-		Gen:   packageList,
+		Gen:   rules,
 	}
 }
 
@@ -49,6 +49,8 @@ func collectDependenciesFromRepo(
 	extensionConfig *config.Config,
 	lang language.Language,
 ) []*rule.Rule {
+	rules := make([]*rule.Rule, 0)
+
 	cexts := []config.Configurer{
 		&config.CommonConfigurer{},
 		&walk.Configurer{},
@@ -56,63 +58,39 @@ func collectDependenciesFromRepo(
 		golang.NewLanguage(),
 		proto.NewLanguage(),
 	}
-	kinds := make(map[string]rule.KindInfo)
 
 	initUpdateReposConfig(logger, extensionConfig, cexts)
 
-	var result []*rule.Rule
-
-	walk.Walk(extensionConfig, cexts, []string{}, walk.VisitAllUpdateDirsMode, func(dir, rel string, c *config.Config, _ bool, f *rule.File, subdirs, regularFiles, genFiles []string) {
-		// Generate rules.
-		var empty, gen []*rule.Rule
-		res := lang.GenerateRules(language.GenerateArgs{
-			Config:       c,
-			Dir:          dir,
-			Rel:          rel,
-			File:         f,
-			Subdirs:      subdirs,
-			RegularFiles: regularFiles,
-			GenFiles:     genFiles,
-			OtherEmpty:   empty,
-			OtherGen:     gen})
-		if len(res.Gen) != len(res.Imports) {
-			logger.Panic().Msgf("%s: language %s generated %d rules but returned %d imports", rel, languageName, len(res.Gen), len(res.Imports))
-		}
-		gen = append(gen, res.Gen...)
-		if f == nil && len(gen) == 0 {
-			return
-		}
-
-		// Apply and record relevant kind mappings.
-		var (
-			mappedKindInfo = make(map[string]rule.KindInfo)
-		)
-		for _, r := range gen {
-			if repl, ok := c.KindMap[r.Kind()]; ok {
-				mappedKindInfo[repl.KindName] = kinds[r.Kind()]
-				r.SetKind(repl.KindName)
+	walk.Walk(
+		extensionConfig,
+		cexts,
+		[]string{},
+		walk.VisitAllUpdateDirsMode,
+		func(
+			_,
+			_ string,
+			_ *config.Config,
+			_ bool,
+			buildFile *rule.File,
+			_,
+			_,
+			_ []string,
+		) {
+			// Translate to repository rules.
+			if buildFile != nil {
+				for _, ruleStatement := range buildFile.Rules {
+					if ruleStatement.Kind() == manifestRule {
+						// Change rule kind to include required load statements
+						// in WORKSPACE file
+						ruleStatement.SetKind(packageRule)
+						rules = append(rules, ruleStatement)
+					}
+				}
 			}
-		}
-
-		// Insert or merge rules into the build file.
-		if f == nil {
-			f = rule.EmptyFile(filepath.Join(dir, c.DefaultBuildFileName()), rel)
-		}
-
-		// TODO: support merges
-		for _, ruleStatement := range res.Gen {
-			if ruleStatement.Kind() == packageRule {
-				result = append(result, ruleStatement)
-			} else {
-				ruleStatement.Insert(f)
-			}
-		}
-
-		f.Save(f.Path)
-	},
+		},
 	)
 
-	return result
+	return rules
 }
 
 func initUpdateReposConfig(logger *zerolog.Logger, extensionConfig *config.Config, cexts []config.Configurer) {

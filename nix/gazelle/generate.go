@@ -88,7 +88,7 @@ func (nixLang *nixLang) GenerateRules(
 		buildFile := fmt.Sprintf("//%s:BUILD.bazel.tpl", args.Rel)
 
 		nrap := &NixRuleArgs{
-			kind: packageRule,
+			kind: manifestRule,
 			attrs: map[string]interface{}{
 				"name":          pkgName,
 				"nix_file_deps": depSets[0].Files,
@@ -121,7 +121,7 @@ func (nixLang *nixLang) GenerateRules(
 		nrae := &NixRuleArgs{
 			kind: exportRule,
 			attrs: map[string]interface{}{
-				"name":  pkgName,
+				"name":  "exports",
 				"files": depSets[1].Files,
 			},
 			comments: []string{

@@ -7,6 +7,12 @@ var nixKinds = map[string]rule.KindInfo{
 		MatchAny:   false,
 		MatchAttrs: []string{"name"},
 	},
+	manifestRule: {
+		MatchAttrs: []string{"name", "nix_file_deps"},
+		MergeableAttrs: map[string]bool{
+			"nix_file_deps": true,
+		},
+	},
 	packageRule: {
 		MatchAttrs: []string{"name", "nix_file_deps"},
 		MergeableAttrs: map[string]bool{
@@ -20,6 +26,7 @@ var nixLoads = []rule.LoadInfo{
 		Name: "@io_tweag_gazelle_nix//nix:defs.bzl",
 		Symbols: []string{
 			exportRule,
+			manifestRule,
 		},
 	},
 	{
