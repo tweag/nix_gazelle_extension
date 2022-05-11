@@ -2,12 +2,14 @@ package gazelle
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"sort"
 	"strings"
 
+	"github.com/bazelbuild/bazel-gazelle/pathtools"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/rs/zerolog"
 )
@@ -103,7 +105,7 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]string,
 		traceOut = traceOuts[i]
 		for j := range traceOut.Inputs {
 			considered := traceOut.Inputs[j]
-			if considered != nixFile && strings.HasPrefix(considered, wsroot) {
+			if considered != nixFile && pathtools.HasPrefix(considered, wsroot) {
 				filteredFiles = append(filteredFiles, considered)
 			}
 		}
@@ -135,12 +137,9 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]string,
 
 		for _, consideredFile := range filteredFiles {
 			if strings.HasPrefix(consideredFile, consideredPackage) {
-				pkg := strings.TrimSuffix(
-					strings.TrimPrefix(consideredPackage, wsroot+"/"),
-					"/",
-				)
-				reltarget := strings.TrimPrefix(consideredFile, consideredPackage)
-				target := "//" + pkg + ":" + reltarget
+				pkg := trimTrailingSlash(pathtools.TrimPrefix(consideredPackage, wsroot))
+				reltarget := pathtools.TrimPrefix(consideredFile, consideredPackage)
+				target := fmt.Sprintf("//%s:%s", pkg, reltarget)
 				targets = append(targets, target)
 			} else {
 				temp = append(temp, consideredFile)
@@ -150,9 +149,9 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]string,
 		filteredFiles = temp
 	}
 
-	nixPackage := "//" + strings.TrimPrefix(
+	nixPackage := "//" + pathtools.TrimPrefix(
 		strings.TrimSuffix(nixFile, "/default.nix"),
-		wsroot+"/",
+		wsroot,
 	)
 	for _, x := range targets {
 		if strings.HasPrefix(x, nixPackage) {
@@ -163,4 +162,11 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]string,
 	}
 
 	return directDeps, chainedDeps, nil
+}
+
+func trimTrailingSlash(p string) string {
+	for len(p) > 1 && p[len(p)-1] == '/' {
+		p = p[:len(p)-1]
+	}
+	return p
 }

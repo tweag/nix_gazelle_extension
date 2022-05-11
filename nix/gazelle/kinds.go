@@ -1,6 +1,8 @@
 package gazelle
 
-import "github.com/bazelbuild/bazel-gazelle/rule"
+import (
+	"github.com/bazelbuild/bazel-gazelle/rule"
+)
 
 var nixKinds = map[string]rule.KindInfo{
 	exportRule: {
