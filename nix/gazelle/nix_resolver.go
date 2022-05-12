@@ -10,18 +10,23 @@ import (
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/private/logconfig"
 )
 
-type Resolver struct {
+// Guarantee NixResolver implements Resolver interface
+var (
+	_ resolve.Resolver = &NixResolver{}
+)
+
+type NixResolver struct {
 	logger *zerolog.Logger
 }
 
-func NewNixResolver() *Resolver {
-	return &Resolver{
+func NewNixResolver() *NixResolver {
+	return &NixResolver{
 		logger: logconfig.GetLogger(),
 	}
 }
 
-func (Resolver) Name() string {
-	return languageName
+func (NixResolver) Name() string {
+	return LANGUAGE_NAME
 }
 
 // Imports returns a list of ImportSpecs that can be used to import
@@ -30,12 +35,12 @@ func (Resolver) Name() string {
 // If nil is returned, the rule will not be indexed. If any non-nil
 // slice is returned, including an empty slice, the rule will be
 // indexed.
-func (nixLangResolver Resolver) Imports(
+func (nlr NixResolver) Imports(
 	extensionConfig *config.Config,
 	ruleStatement *rule.Rule,
 	buildFile *rule.File,
 ) []resolve.ImportSpec {
-	nixLangResolver.logger.Debug().
+	nlr.logger.Debug().
 		Str("step", "gazelle.nixLang.Resolver.Imports").
 		Str("path", buildFile.Pkg).
 		Str("rule", ruleStatement.Name()).
@@ -44,14 +49,14 @@ func (nixLangResolver Resolver) Imports(
 	var prefix string
 
 	switch ruleStatement.Kind() {
-	case exportRule:
+	case EXPORT_RULE:
 		prefix = "exports:"
-	case packageRule:
+	case PACKAGE_RULE:
 		prefix = "nixpkgs_package:"
 	}
 
 	return []resolve.ImportSpec{{
-		Lang: languageName,
+		Lang: LANGUAGE_NAME,
 		Imp:  prefix + ruleStatement.Name(),
 	}}
 }
@@ -60,7 +65,7 @@ func (nixLangResolver Resolver) Imports(
 // embeds. If a rule is embedded by another importable rule of the
 // same language, only the embedding rule will be indexed. The
 // embedding rule will inherit the imports of the embedded rule.
-func (Resolver) Embeds(r *rule.Rule, from label.Label) []label.Label {
+func (NixResolver) Embeds(r *rule.Rule, from label.Label) []label.Label {
 	return nil
 }
 
@@ -71,7 +76,7 @@ func (Resolver) Embeds(r *rule.Rule, from label.Label) []label.Label {
 // generates a "deps" attribute (or the appropriate language-specific
 // equivalent) for each import according to language-specific rules
 // and heuristics.
-func (Resolver) Resolve(
+func (NixResolver) Resolve(
 	config *config.Config,
 	ruleIndex *resolve.RuleIndex,
 	remoteCache *repo.RemoteCache,

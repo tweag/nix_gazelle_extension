@@ -11,12 +11,17 @@ import (
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/private/logconfig"
 )
 
-type Configurer struct {
+// Guarantee NixConfigurer implements Configurer interface
+var (
+	_ config.Configurer = &NixConfigurer{}
+)
+
+type NixConfigurer struct {
 	logger *zerolog.Logger
 }
 
-func NewNixConfigurer() *Configurer {
-	return &Configurer{
+func NewNixConfigurer() *NixConfigurer {
+	return &NixConfigurer{
 		logger: logconfig.GetLogger(),
 	}
 }
@@ -25,14 +30,14 @@ func NewNixConfigurer() *Configurer {
 // extension. This method is called once with the root configuration
 // when Gazelle starts. RegisterFlags may set an initial values in
 // Config.Exts. When flags are set, they should modify these values.
-func (nixLangConfigurer Configurer) RegisterFlags(
+func (nlc NixConfigurer) RegisterFlags(
 	flagSet *flag.FlagSet,
 	cmd string,
 	config *config.Config,
 ) {
 }
 
-func (nixLangConfigurer *Configurer) CheckFlags(
+func (nlc *NixConfigurer) CheckFlags(
 	flagSet *flag.FlagSet,
 	config *config.Config,
 ) error {
@@ -42,10 +47,10 @@ func (nixLangConfigurer *Configurer) CheckFlags(
 // KnownDirectives returns a list of directive keys that this
 // Configurer can interpret. Gazelle prints errors for directives that
 // are not recoginized by any Configurer.
-func (nixLangConfigurer *Configurer) KnownDirectives() []string {
+func (nlc *NixConfigurer) KnownDirectives() []string {
 	return []string{
-		nixconfig.NixPrelude,
-		nixconfig.NixRepositories,
+		nixconfig.NIX_PRELUDE,
+		nixconfig.NIX_REPOSITORIES,
 	}
 }
 
@@ -61,46 +66,45 @@ func (nixLangConfigurer *Configurer) KnownDirectives() []string {
 //
 // f is the build file for the current directory or nil if there is no
 // existing build file.
-
-func (nixLangConfigurer *Configurer) Configure(config *config.Config, relative string, buildFile *rule.File) {
-	nixLangConfigurer.logger.
+func (nlc *NixConfigurer) Configure(config *config.Config, relative string, buildFile *rule.File) {
+	nlc.logger.
 		Debug().
 		Str("step", "gazelle.nixLang.Configurer.Configure").
 		Str("path", relative).
 		Msg("")
 
 	// root config
-	if _, exists := config.Exts[languageName]; !exists {
-		config.Exts[languageName] = nixconfig.Configs{
+	if _, exists := config.Exts[LANGUAGE_NAME]; !exists {
+		config.Exts[LANGUAGE_NAME] = nixconfig.NixLanguageConfigs{
 			"": nixconfig.New(),
 		}
 	}
 
-	nixConfigs := config.Exts[languageName].(nixconfig.Configs)
+	nixConfigs := config.Exts[LANGUAGE_NAME].(nixconfig.NixLanguageConfigs)
 	_, exists := nixConfigs[relative]
 
 	if !exists {
-		nixLangConfigurer.logger.Trace().Msg("creating config")
-		parent := nixConfigs.ParentForPackage(relative)
+		nlc.logger.Trace().Msg("creating config")
+		parent := nixConfigs.FindPackageParent(relative)
 		nixConfigs[relative] = parent.NewChild()
 	}
 	if buildFile != nil {
 		for _, directive := range buildFile.Directives {
-			nixLangConfigurer.logger.Trace().
+			nlc.logger.Trace().
 				Str("directive", directive.Key).
 				Str("value", directive.Value).
 				Msgf("setting config %s, using value %s", directive.Key, directive.Value)
 			switch directive.Key {
-			case nixconfig.NixPrelude:
-				nixConfigs[relative].SetNixPrelude(directive.Value)
-			case nixconfig.NixRepositories:
-				parseNixRepositories(nixLangConfigurer.logger, nixConfigs[relative], directive.Value)
+			case nixconfig.NIX_PRELUDE:
+				nixConfigs[relative].NixPrelude = directive.Value
+			case nixconfig.NIX_REPOSITORIES:
+				parseNixRepositories(nlc.logger, nixConfigs[relative], directive.Value)
 			}
 		}
 	}
 }
 
-func parseNixRepositories(logger *zerolog.Logger, nixConfig *nixconfig.Config, value string) {
+func parseNixRepositories(logger *zerolog.Logger, nixConfig *nixconfig.NixLanguageConfig, value string) {
 	const parts = 2
 
 	pairs := strings.Split(value, " ")
@@ -114,13 +118,13 @@ func parseNixRepositories(logger *zerolog.Logger, nixConfig *nixconfig.Config, v
 		logger.Panic().
 			Err(errParse).
 			Str("value", value).
-			Str("directive", nixconfig.NixRepositories).
-			Msgf("Cannot parse %s directive, invalid value %s", nixconfig.NixRepositories, value)
+			Str("directive", nixconfig.NIX_REPOSITORIES).
+			Msgf("Cannot parse %s directive, invalid value %s", nixconfig.NIX_REPOSITORIES, value)
 	}
 
 	repositories := make(map[string]string)
 	for i := 0; i < len(keyValuePair); i += 2 {
 		repositories[keyValuePair[i]] = keyValuePair[i+1]
-		nixConfig.SetNixRepositories(repositories)
+		nixConfig.NixRepositories = repositories
 	}
 }

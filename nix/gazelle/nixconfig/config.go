@@ -5,73 +5,52 @@ import (
 )
 
 const (
-	NixPrelude      = "nix_prelude"
-	NixRepositories = "nix_repositories"
+	NIX_PRELUDE      = "nix_prelude"
+	NIX_REPOSITORIES = "nix_repositories"
 )
 
-// Configs is an extension of map[string]*Config. It provides finding methods
-// on top of the mapping.
-type Configs map[string]*Config
+// NixLanguageConfig configuration for language extension.
+type NixLanguageConfig struct {
+	Parent *NixLanguageConfig
 
-// Config configuration for language extension.
-type Config struct {
-	parent *Config
-
-	nixPrelude      string
-	nixRepositories map[string]string
-	wsmode          bool
+	NixPrelude      string
+	NixRepositories map[string]string
+	Wsmode          bool
 }
 
 // NewChild creates a new child Config. It inherits desired values from the
 // current Config and sets itself as the parent to the child.
-func (c *Config) NewChild() *Config {
-	return &Config{
-		parent:          c,
-		nixPrelude:      c.nixPrelude,
-		nixRepositories: c.nixRepositories,
-		wsmode:          c.wsmode,
+func (c *NixLanguageConfig) NewChild() *NixLanguageConfig {
+	return &NixLanguageConfig{
+		Parent:          c,
+		NixPrelude:      c.NixPrelude,
+		NixRepositories: c.NixRepositories,
+		Wsmode:          c.Wsmode,
 	}
 }
 
 // New creates a new Config.
-func New() *Config {
-	return &Config{
-		nixPrelude:      "",
-		nixRepositories: make(map[string]string),
-		wsmode:          false,
+func New() *NixLanguageConfig {
+	return &NixLanguageConfig{
+		NixPrelude:      "",
+		NixRepositories: make(map[string]string),
+		Wsmode:          false,
 	}
 }
 
-// ParentForPackage returns the parent Config for the given Bazel package.
-func (c *Configs) ParentForPackage(pkg string) *Config {
+// NixLanguageConfigs is an extension of map[string]*Config.
+// Aids in quicker access to method for finding package
+type NixLanguageConfigs map[string]*NixLanguageConfig
+
+// FindPackageParent returns the parent Config for the given Bazel package.
+func (c *NixLanguageConfigs) FindPackageParent(pkg string) *NixLanguageConfig {
 	dir := filepath.Dir(pkg)
 	if dir == "." {
 		dir = ""
 	}
-	parent := (map[string]*Config)(*c)[dir]
-	return parent
-}
 
-func (c *Config) SetNixPrelude(filename string) {
-	c.nixPrelude = filename
-}
-
-func (c Config) NixPrelude() string {
-	return c.nixPrelude
-}
-
-func (c *Config) SetNixRepositories(repositories map[string]string) {
-	c.nixRepositories = repositories
-}
-
-func (c Config) NixRepositories() map[string]string {
-	return c.nixRepositories
-}
-
-func (c *Config) SetWsMode(wsmode bool) {
-	c.wsmode = wsmode
-}
-
-func (c Config) WsMode() bool {
-	return c.wsmode
+	if parent, exists := (*c)[dir]; exists {
+		return parent
+	}
+	return nil
 }

@@ -31,11 +31,11 @@ func (nixLang *nixLang) GenerateRules(
 	logger := nixLang.logger.With().
 		Str("step", "gazelle.nixLang.GenerateRules").
 		Str("path", args.Rel).
-		Str("language", languageName).
+		Str("language", LANGUAGE_NAME).
 		Logger()
 
 	logger.Debug().Msg("")
-	nixConfigs, ok := args.Config.Exts[languageName].(nixconfig.Configs)
+	nixConfigs, ok := args.Config.Exts[LANGUAGE_NAME].(nixconfig.NixLanguageConfigs)
 
 	if !ok {
 		logger.Fatal().
@@ -50,8 +50,8 @@ func (nixLang *nixLang) GenerateRules(
 			Msgf("Cannot extract config")
 	}
 
-	nixPreludeConf := cfg.NixPrelude()
-	nixRepositoriesConf := cfg.NixRepositories()
+	nixPreludeConf := cfg.NixPrelude
+	nixRepositoriesConf := cfg.NixRepositories
 
 	var res language.GenerateResult
 
@@ -88,7 +88,7 @@ func (nixLang *nixLang) GenerateRules(
 		buildFile := fmt.Sprintf("//%s:BUILD.bazel.tpl", args.Rel)
 
 		nrap := &NixRuleArgs{
-			kind: manifestRule,
+			kind: MANIFEST_RULE,
 			attrs: map[string]interface{}{
 				"name":          pkgName,
 				"nix_file_deps": chainedDeps,
@@ -119,7 +119,7 @@ func (nixLang *nixLang) GenerateRules(
 		}
 
 		nrae := &NixRuleArgs{
-			kind: exportRule,
+			kind: EXPORT_RULE,
 			attrs: map[string]interface{}{
 				"name":  "exports",
 				"files": directDeps,

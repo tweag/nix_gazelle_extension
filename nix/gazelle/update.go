@@ -21,7 +21,7 @@ func (nixLang *nixLang) UpdateRepos(
 	logger := nixLang.logger.With().
 		Str("step", "gazelle.nixLang.UpdateRepos").
 		Str("path", args.Config.WorkDir).
-		Str("language", languageName).
+		Str("language", LANGUAGE_NAME).
 		Logger()
 
 	logger.Debug().Msg("")
@@ -79,10 +79,10 @@ func collectDependenciesFromRepo(
 			// Translate to repository rules.
 			if buildFile != nil {
 				for _, ruleStatement := range buildFile.Rules {
-					if ruleStatement.Kind() == manifestRule {
+					if ruleStatement.Kind() == MANIFEST_RULE {
 						// Change rule kind to include required load statements
 						// in WORKSPACE file
-						ruleStatement.SetKind(packageRule)
+						ruleStatement.SetKind(PACKAGE_RULE)
 						rules = append(rules, ruleStatement)
 					}
 				}
@@ -95,13 +95,13 @@ func collectDependenciesFromRepo(
 
 func initUpdateReposConfig(logger *zerolog.Logger, extensionConfig *config.Config, cexts []config.Configurer) {
 	// root config
-	if _, exists := extensionConfig.Exts[languageName]; !exists {
-		extensionConfig.Exts[languageName] = nixconfig.Configs{
+	if _, exists := extensionConfig.Exts[LANGUAGE_NAME]; !exists {
+		extensionConfig.Exts[LANGUAGE_NAME] = nixconfig.NixLanguageConfigs{
 			"": nixconfig.New(),
 		}
 	}
 
-	extensionConfig.Exts[languageName].(nixconfig.Configs)[""].SetWsMode(true)
+	extensionConfig.Exts[LANGUAGE_NAME].(nixconfig.NixLanguageConfigs)[""].Wsmode = true
 
 	flagSet := flag.NewFlagSet("updateReposFlagSet", flag.ContinueOnError)
 
