@@ -15,6 +15,12 @@ var (
 	errParse  = errors.New("directive parsing failed")
 )
 
+// Guarantee nixLang implements Language, RepoUpdater interfaces
+var (
+	_ language.Language    = &nixLang{}
+	_ language.RepoUpdater = &nixLang{}
+)
+
 type nixLang struct {
 	config.Configurer
 	resolve.Resolver
@@ -23,8 +29,7 @@ type nixLang struct {
 
 // Return implementation supporting nix language
 func NewLanguage() language.Language {
-	logger := logconfig.GetLogger()
-	logger.Debug().Msg("creating nix language")
+	logconfig.GetLogger().Debug().Msg("creating nix language")
 
 	return &nixLang{
 		logger:     logconfig.GetLogger(),

@@ -34,12 +34,12 @@ type TraceOut struct {
 func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]string, []string, error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
-	scanNix, err := bazel.Runfile(nix2BuildPath)
+	scanNix, err := bazel.Runfile(NIX2BUILDPATH)
 	if err != nil {
 		logger.Panic().
 			Err(err).
-			Str("runfile", nix2BuildPath).
-			Msgf("fptrace runfile not found %s", nix2BuildPath)
+			Str("runfile", NIX2BUILDPATH).
+			Msgf("fptrace runfile not found %s", NIX2BUILDPATH)
 	}
 
 	tmpfile, err := ioutil.TempFile("", "nix-gzl*.json")
