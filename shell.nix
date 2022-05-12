@@ -24,6 +24,5 @@ mkShell {
     export GO111MODULE=on
     export GOCACHE=$(pwd)/.gocache
     export GOPATH=$(pwd)/.go
-    export NIX_PATH=nixpkgs=$(pwd)/third_party/nix/nixpkgs.nix
   '';
 }
