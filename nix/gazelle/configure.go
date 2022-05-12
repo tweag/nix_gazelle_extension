@@ -8,14 +8,17 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	"github.com/rs/zerolog"
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/nixconfig"
+	"github.com/tweag/nix_gazelle_extension/nix/gazelle/private/logconfig"
 )
 
 type Configurer struct {
-	lang *nixLang
+	logger *zerolog.Logger
 }
 
-func NewConfigurer(lang *nixLang) *Configurer {
-	return &Configurer{lang}
+func NewNixConfigurer() *Configurer {
+	return &Configurer{
+		logger: logconfig.GetLogger(),
+	}
 }
 
 // RegisterFlags registers command-line flags used by the
@@ -60,12 +63,11 @@ func (nixLangConfigurer *Configurer) KnownDirectives() []string {
 // existing build file.
 
 func (nixLangConfigurer *Configurer) Configure(config *config.Config, relative string, buildFile *rule.File) {
-	logger := nixLangConfigurer.lang.logger.With().
+	nixLangConfigurer.logger.
+		Debug().
 		Str("step", "gazelle.nixLang.Configurer.Configure").
 		Str("path", relative).
-		Logger()
-
-	logger.Debug().Msg("")
+		Msg("")
 
 	// root config
 	if _, exists := config.Exts[languageName]; !exists {
@@ -78,13 +80,13 @@ func (nixLangConfigurer *Configurer) Configure(config *config.Config, relative s
 	_, exists := nixConfigs[relative]
 
 	if !exists {
-		logger.Trace().Msg("creating config")
+		nixLangConfigurer.logger.Trace().Msg("creating config")
 		parent := nixConfigs.ParentForPackage(relative)
 		nixConfigs[relative] = parent.NewChild()
 	}
 	if buildFile != nil {
 		for _, directive := range buildFile.Directives {
-			logger.Trace().
+			nixLangConfigurer.logger.Trace().
 				Str("directive", directive.Key).
 				Str("value", directive.Value).
 				Msgf("setting config %s, using value %s", directive.Key, directive.Value)
@@ -92,7 +94,7 @@ func (nixLangConfigurer *Configurer) Configure(config *config.Config, relative s
 			case nixconfig.NixPrelude:
 				nixConfigs[relative].SetNixPrelude(directive.Value)
 			case nixconfig.NixRepositories:
-				parseNixRepositories(&logger, nixConfigs[relative], directive.Value)
+				parseNixRepositories(nixLangConfigurer.logger, nixConfigs[relative], directive.Value)
 			}
 		}
 	}

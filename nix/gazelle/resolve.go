@@ -6,15 +6,17 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/repo"
 	"github.com/bazelbuild/bazel-gazelle/resolve"
 	"github.com/bazelbuild/bazel-gazelle/rule"
+	"github.com/rs/zerolog"
+	"github.com/tweag/nix_gazelle_extension/nix/gazelle/private/logconfig"
 )
 
 type Resolver struct {
-	lang *nixLang
+	logger *zerolog.Logger
 }
 
-func NewResolver(lang *nixLang) *Resolver {
+func NewNixResolver() *Resolver {
 	return &Resolver{
-		lang: lang,
+		logger: logconfig.GetLogger(),
 	}
 }
 
@@ -33,13 +35,11 @@ func (nixLangResolver Resolver) Imports(
 	ruleStatement *rule.Rule,
 	buildFile *rule.File,
 ) []resolve.ImportSpec {
-	logger := nixLangResolver.lang.logger.With().
+	nixLangResolver.logger.Debug().
 		Str("step", "gazelle.nixLang.Resolver.Imports").
 		Str("path", buildFile.Pkg).
 		Str("rule", ruleStatement.Name()).
-		Logger()
-
-	logger.Debug().Msg("")
+		Msg("")
 
 	var prefix string
 

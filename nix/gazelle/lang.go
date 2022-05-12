@@ -2,7 +2,6 @@ package gazelle
 
 import (
 	"errors"
-	"os"
 
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/language"
@@ -19,27 +18,17 @@ var (
 type nixLang struct {
 	config.Configurer
 	resolve.Resolver
-
-	logger zerolog.Logger
+	logger *zerolog.Logger
 }
 
-// NewLanguage implementation.
+// Return implementation supporting nix language
 func NewLanguage() language.Language {
-
-	logLevel := logconfig.LogLevel()
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).
-		With().
-		Timestamp().
-		Caller().
-		Logger().
-		Level(logLevel)
+	logger := logconfig.GetLogger()
 	logger.Debug().Msg("creating nix language")
 
-	nl := nixLang{
-		logger: logger,
+	return &nixLang{
+		logger:     logconfig.GetLogger(),
+		Configurer: NewNixConfigurer(),
+		Resolver:   NewNixResolver(),
 	}
-	nl.Configurer = NewConfigurer(&nl)
-	nl.Resolver = NewResolver(&nl)
-
-	return &nl
 }

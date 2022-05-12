@@ -1,25 +1,46 @@
 package logconfig
 
 import (
-	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/rs/zerolog"
 )
 
-const logLevelKey = "GAZELLE_LANGUAGES_NIX_LOG_LEVEL"
+const GAZELLE_NIX_LOGGING_LEVEL = "GAZELLE_LANGUAGES_NIX_LOG_LEVEL"
+const DEFAULT_LOGGING_LEVEL = "info"
 
-func LogLevel() (zerolog.Level) {
-	v := os.Getenv(logLevelKey)
-	if v == "" {
-		v = "info"
+var loggerInstance *zerolog.Logger
+var once sync.Once
+
+func getLoggingLevel() zerolog.Level {
+	var verbosity string
+	if verbosity = os.Getenv(GAZELLE_NIX_LOGGING_LEVEL); len(verbosity) <= 0 {
+		verbosity = DEFAULT_LOGGING_LEVEL
 	}
 
-	logLevel, err := zerolog.ParseLevel(strings.ToLower(v))
+	logLevel, err := zerolog.ParseLevel(strings.ToLower(verbosity))
 	if err != nil {
-		panic(fmt.Sprintf("invalid log level '%s': %s", v, err))
+		// Gracefully handle invalid user settings
+		return zerolog.InfoLevel
 	}
 
 	return logLevel
+}
+
+// Return instance of zerolog logger
+// that should be used throughout Gazelle nix execution
+func GetLogger() *zerolog.Logger {
+	once.Do(func() {
+		var logger = zerolog.New(
+			zerolog.ConsoleWriter{Out: os.Stderr},
+		).With().
+			Timestamp().
+			Caller().
+			Logger().
+			Level(getLoggingLevel())
+		loggerInstance = &logger
+	})
+	return loggerInstance
 }
