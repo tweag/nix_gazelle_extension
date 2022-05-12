@@ -13,3 +13,16 @@ io_tweag_gazelle_nix_deps()
 
 load("@io_tweag_gazelle_nix//:setup.bzl", "io_tweag_gazelle_nix_setup")
 io_tweag_gazelle_nix_setup()
+
+load(
+    "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
+    "nixpkgs_local_repository",
+)
+
+nixpkgs_local_repository(
+    name = "nixpkgs",
+    nix_file = "//nix/nixpkgs:nixpkgs.nix",
+    nix_file_deps = [
+        "//nix/nixpkgs:nixpkgs.json",
+    ],
+)

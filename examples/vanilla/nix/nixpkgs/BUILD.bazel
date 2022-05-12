@@ -1,5 +1,4 @@
-exports_files(
-    [
-        "default.nix",
-    ],
-)
+exports_files([
+    "nixpkgs.json",
+    "nixpkgs.nix",
+])
