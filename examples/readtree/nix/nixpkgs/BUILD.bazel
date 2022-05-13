@@ -1,4 +1,4 @@
 exports_files([
     "nixpkgs.json",
-    "nixpkgs.nix",
+    "default.nix",
 ])
