@@ -20,7 +20,7 @@ func SourceFileToNixRules(
 	sourceDirRel string,
 	nixCfg *nixconfig.NixLanguageConfig,
 	wg *sync.WaitGroup,
-	rules chan<- rule.Rule) {
+	rules chan<- *rule.Rule) {
 	defer wg.Done()
 
 	var logger = logconfig.GetLogger()
@@ -78,7 +78,7 @@ func SourceFileToNixRules(
 		nrap.attrs["nix_file"] = fmt.Sprintf("//%s:%s", sourceDirRel, sourceFile)
 	}
 
-	rules <- *genNixRule(nrap)
+	rules <- genNixRule(nrap)
 
 	if fileExists(bzlTemplate) {
 		nrap.attrs["build_file"] = buildFile
@@ -99,7 +99,7 @@ func SourceFileToNixRules(
 		},
 	}
 
-	rules <- *genNixRule(nrae)
+	rules <- genNixRule(nrae)
 }
 
 // GenerateRules extracts build metadata from source files in a directory.
@@ -142,7 +142,7 @@ func (nixLang *nixLang) GenerateRules(
 
 	var res language.GenerateResult
 	var wg sync.WaitGroup
-	var rules = make(chan rule.Rule)
+	var rules = make(chan *rule.Rule)
 
 	go func() {
 		wg.Wait()
@@ -156,7 +156,7 @@ func (nixLang *nixLang) GenerateRules(
 
 	// Read of channel is blocking
 	for r := range rules {
-		res.Gen = append(res.Gen, &r)
+		res.Gen = append(res.Gen, r)
 	}
 
 	res.Imports = make([]interface{}, len(res.Gen))
