@@ -5,7 +5,6 @@ with pkgs;
 mkShell {
   buildInputs = [
     bazel_5
-    bazel-buildtools
     binutils
     cacert
     go_1_18

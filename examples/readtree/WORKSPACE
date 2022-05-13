@@ -6,12 +6,15 @@ local_repository(
 )
 
 load("@io_tweag_gazelle_nix//:repositories.bzl", "io_tweag_gazelle_nix_repositories")
+
 io_tweag_gazelle_nix_repositories()
 
 load("@io_tweag_gazelle_nix//:deps.bzl", "io_tweag_gazelle_nix_deps")
+
 io_tweag_gazelle_nix_deps()
 
 load("@io_tweag_gazelle_nix//:setup.bzl", "io_tweag_gazelle_nix_setup")
+
 io_tweag_gazelle_nix_setup()
 
 load(
