@@ -11,8 +11,9 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/language/proto"
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	"github.com/bazelbuild/bazel-gazelle/walk"
+	"github.com/lainio/err2"
+	"github.com/lainio/err2/try"
 	"github.com/rs/zerolog"
-	"github.com/tweag/nix_gazelle_extension/nix/gazelle/nixconfig"
 )
 
 func (nixLang *nixLang) UpdateRepos(
@@ -94,26 +95,19 @@ func collectDependenciesFromRepo(
 }
 
 func initUpdateReposConfig(logger *zerolog.Logger, extensionConfig *config.Config, cexts []config.Configurer) {
-	// root config
-	if _, exists := extensionConfig.Exts[LANGUAGE_NAME]; !exists {
-		extensionConfig.Exts[LANGUAGE_NAME] = nixconfig.NixLanguageConfigs{
-			"": nixconfig.New(),
-		}
-	}
+	defer err2.Catch(func(err error) {
+		logger.Fatal().Err(err)
+	})
 
-	extensionConfig.Exts[LANGUAGE_NAME].(nixconfig.NixLanguageConfigs)[""].Wsmode = true
+	cfg := try.To1(GetNixConfig(extensionConfig, ""))
+	cfg.Wsmode = true
 
 	flagSet := flag.NewFlagSet("updateReposFlagSet", flag.ContinueOnError)
-
 	for _, cext := range cexts {
 		cext.RegisterFlags(flagSet, "update", extensionConfig)
 	}
 
 	for _, cext := range cexts {
-		if err := cext.CheckFlags(flagSet, extensionConfig); err != nil {
-			logger.Fatal().
-				Err(err).
-				Msg("")
-		}
+		try.To(cext.CheckFlags(flagSet, extensionConfig))
 	}
 }
