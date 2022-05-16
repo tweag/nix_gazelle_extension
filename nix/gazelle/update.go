@@ -1,6 +1,7 @@
 package gazelle
 
 import (
+	"errors"
 	"flag"
 	"sort"
 	"strings"
@@ -96,7 +97,15 @@ func collectDependenciesFromRepo(
 
 func initUpdateReposConfig(logger *zerolog.Logger, extensionConfig *config.Config, cexts []config.Configurer) {
 	defer err2.Catch(func(err error) {
-		logger.Fatal().Err(err)
+		var msg string
+		if errors.Is(err, errAssert) {
+			msg = "Cannot extract configs"
+		} else {
+			msg = ""
+		}
+		logger.Fatal().
+			Err(err).
+			Msg(msg)
 	})
 
 	cfg := try.To1(GetNixConfig(extensionConfig, ""))

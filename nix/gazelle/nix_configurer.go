@@ -90,7 +90,6 @@ func (nlc *NixConfigurer) Configure(config *config.Config, relative string, buil
 			Str("value", dk).
 			Str("directive", dv).
 			Msgf("Cannot parse %s directive, invalid value %s", dk, dv)
-
 	})
 
 	if buildFile != nil {
