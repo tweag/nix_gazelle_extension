@@ -1,11 +1,14 @@
 package gazelle
 
 import (
+	"errors"
 	"flag"
 	"strings"
 
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/rule"
+	"github.com/lainio/err2"
+	"github.com/lainio/err2/try"
 	"github.com/rs/zerolog"
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/nixconfig"
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/private/logconfig"
@@ -13,7 +16,9 @@ import (
 
 // Guarantee NixConfigurer implements Configurer interface
 var (
-	_ config.Configurer = &NixConfigurer{}
+	_         config.Configurer = &NixConfigurer{}
+	errAssert                   = errors.New("assertion failed")
+	errParse                    = errors.New("directive parsing failed")
 )
 
 type NixConfigurer struct {
@@ -73,38 +78,45 @@ func (nlc *NixConfigurer) Configure(config *config.Config, relative string, buil
 		Str("path", relative).
 		Msg("")
 
-	// root config
-	if _, exists := config.Exts[LANGUAGE_NAME]; !exists {
-		config.Exts[LANGUAGE_NAME] = nixconfig.NixLanguageConfigs{
-			"": nixconfig.New(),
-		}
-	}
+	nlc.logger.Trace().Msg("creating config")
 
-	nixConfigs := config.Exts[LANGUAGE_NAME].(nixconfig.NixLanguageConfigs)
-	_, exists := nixConfigs[relative]
+	cfg := createNixConfig(config, relative)
+	var directive rule.Directive
+	var dk, dv string
 
-	if !exists {
-		nlc.logger.Trace().Msg("creating config")
-		parent := nixConfigs.FindPackageParent(relative)
-		nixConfigs[relative] = parent.NewChild()
-	}
+	defer err2.Catch(func(err error) {
+		nlc.logger.Fatal().
+			Err(err).
+			Str("value", dk).
+			Str("directive", dv).
+			Msgf("Cannot parse %s directive, invalid value %s", dk, dv)
+
+	})
+
 	if buildFile != nil {
-		for _, directive := range buildFile.Directives {
+		for _, directive = range buildFile.Directives {
+			dk, dv = directive.Key, directive.Value
 			nlc.logger.Trace().
-				Str("directive", directive.Key).
-				Str("value", directive.Value).
-				Msgf("setting config %s, using value %s", directive.Key, directive.Value)
+				Str("directive", dk).
+				Str("value", dv).
+				Msgf("setting config %s, using value %s", dk, dv)
 			switch directive.Key {
 			case nixconfig.NIX_PRELUDE:
-				nixConfigs[relative].NixPrelude = directive.Value
+				try.To(parseNixPrelude(cfg, dv))
 			case nixconfig.NIX_REPOSITORIES:
-				parseNixRepositories(nlc.logger, nixConfigs[relative], directive.Value)
+				try.To(parseNixRepositories(cfg, dv))
 			}
 		}
 	}
 }
 
-func parseNixRepositories(logger *zerolog.Logger, nixConfig *nixconfig.NixLanguageConfig, value string) {
+func parseNixPrelude(nixConfig *nixconfig.NixLanguageConfig, value string) (err error) {
+	//TODO implmement parsing
+	nixConfig.NixPrelude = value
+	return nil
+}
+
+func parseNixRepositories(nixConfig *nixconfig.NixLanguageConfig, value string) (err error) {
 	const parts = 2
 
 	pairs := strings.Split(value, " ")
@@ -115,11 +127,7 @@ func parseNixRepositories(logger *zerolog.Logger, nixConfig *nixconfig.NixLangua
 	}
 
 	if len(keyValuePair)%2 != 0 {
-		logger.Panic().
-			Err(errParse).
-			Str("value", value).
-			Str("directive", nixconfig.NIX_REPOSITORIES).
-			Msgf("Cannot parse %s directive, invalid value %s", nixconfig.NIX_REPOSITORIES, value)
+		return errParse
 	}
 
 	repositories := make(map[string]string)
@@ -127,4 +135,40 @@ func parseNixRepositories(logger *zerolog.Logger, nixConfig *nixconfig.NixLangua
 		repositories[keyValuePair[i]] = keyValuePair[i+1]
 		nixConfig.NixRepositories = repositories
 	}
+
+	return nil
+}
+
+func GetNixConfig(config *config.Config, relative string) (*nixconfig.NixLanguageConfig, error) {
+	configs, ok := config.Exts[LANGUAGE_NAME].(nixconfig.NixLanguageConfigs)
+	if !ok {
+		return nil, errAssert
+	}
+
+	cfg, ok := configs[relative]
+	if !ok {
+		return nil, errAssert
+	}
+
+	return cfg, nil
+}
+
+func createNixConfig(config *config.Config, relative string) *nixconfig.NixLanguageConfig {
+	var ok bool
+	var cfg *nixconfig.NixLanguageConfig
+	var cfgs nixconfig.NixLanguageConfigs
+
+	if cfgs, ok = config.Exts[LANGUAGE_NAME].(nixconfig.NixLanguageConfigs); !ok {
+		cfgs = nixconfig.NixLanguageConfigs{
+			"": nixconfig.New(),
+		}
+		config.Exts[LANGUAGE_NAME] = cfgs
+	}
+
+	if cfg, ok = cfgs[relative]; !ok {
+		cfg = cfgs.FindPackageParent(relative).NewChild()
+		cfgs[relative] = cfg
+	}
+
+	return cfg
 }

@@ -1,6 +1,6 @@
 {
   "nixpkgs-channel": "nixos-unstable",
   "date": "Wed May 11 03:41:56 PM UTC 2022",
-  "url": "https://github.com/NixOS/nixpkgs/archive/f419dc5763c2b3c5580e396dea065b6d8b58ee27.tar.gz",
-  "sha256": "1vbk6l8hrg4b35zsihvfjgv3k1rjr3xn2azzv2safs1hpcr8kvgi"
+  "url": "https://github.com/NixOS/nixpkgs/archive/556ce9a40abde33738e6c9eac65f965a8be3b623.tar.gz",
+  "sha256": "1a6dk8iw1y76gyzars32iq7rlmm19k6437r4ajjga5rlr23ln16a"
 }

@@ -1,18 +1,11 @@
 package gazelle
 
 import (
-	"errors"
-
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/language"
 	"github.com/bazelbuild/bazel-gazelle/resolve"
 	"github.com/rs/zerolog"
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/private/logconfig"
-)
-
-var (
-	errAssert = errors.New("assertion failed")
-	errParse  = errors.New("directive parsing failed")
 )
 
 // Guarantee nixLang implements Language, RepoUpdater interfaces
