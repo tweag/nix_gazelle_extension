@@ -33,6 +33,18 @@ def io_tweag_gazelle_nix_setup(nixpkgs = None, get_go_from_nix = True):
     if get_go_from_nix:
         nixpkgs_go_configure(
             repository = nixpkgs,
+            nix_file_content = """
+            with import <nixpkgs> { config = {}; overlays = []; }; buildEnv {
+              name = "bazel-go-toolchain";
+              paths = [
+                go_1_18
+              ];
+              postBuild = ''
+                touch $out/ROOT
+                ln -s $out/share/go/{api,doc,lib,misc,pkg,src} $out/
+              '';
+            }
+        """,
         )
 
     gazelle_dependencies()
