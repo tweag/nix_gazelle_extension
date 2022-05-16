@@ -40,10 +40,11 @@ func SourceFileToNixRules(
 
 	pth := filepath.Join(sourceDirAbs, sourceFile)
 
-	directDeps, chainedDeps, err := nixToDepSets(logger, nixCfg.NixPrelude, pth)
-	if err != nil {
-		return
-	}
+	defer err2.Catch(func(err error) {
+		logger.Error().Err(err)
+	})
+
+	directDeps, chainedDeps := try.To2(nixToDepSets(logger, nixCfg.NixPrelude, pth))
 
 	pkgName := strings.ReplaceAll(sourceDirRel, "/", ".")
 
