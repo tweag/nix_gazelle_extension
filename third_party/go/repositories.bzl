@@ -170,6 +170,7 @@ def go_deps():
     go_repository(
         name = "com_github_rs_zerolog",
         importpath = "github.com/rs/zerolog",
+        build_external = "external",  # https://github.com/bazelbuild/bazel-gazelle/issues/1217
         sum = "h1:/ihwxqH+4z8UxyI70wM1z9yCvkWcfz/a3mj48k/Zngc=",
         version = "v1.26.1",
     )

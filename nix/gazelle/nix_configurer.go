@@ -85,7 +85,8 @@ func (nlc *NixConfigurer) Configure(config *config.Config, relative string, buil
 	var dk, dv string
 
 	defer err2.Catch(func(err error) {
-		nlc.logger.Fatal().
+		nlc.logger.
+			Fatal().
 			Err(err).
 			Str("value", dk).
 			Str("directive", dv).
