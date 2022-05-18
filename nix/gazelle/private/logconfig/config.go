@@ -45,7 +45,7 @@ func getLoggingLevel() zerolog.Level {
 // Return instance of zerolog logger
 // that should be used throughout Gazelle nix execution
 func GetLogger() *zerolog.Logger {
-	once.Do(func() {,
+	once.Do(func() {
 		loglevel := getLoggingLevel()
 		var logger = zerolog.New(
 			zerolog.ConsoleWriter{Out: os.Stderr},
@@ -80,7 +80,7 @@ func GetLogger() *zerolog.Logger {
 
 func callerFormatter() zerolog.Formatter {
 	return func(i interface{}) string {
-		return fmt.Sprintf("%-70s|", i.(string))
+		return fmt.Sprintf("\x1b[%dm%-70s\x1b[0m|", COLOR_BOLD, i.(string))
 	}
 }
 
