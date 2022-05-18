@@ -45,7 +45,7 @@ func getLoggingLevel() zerolog.Level {
 // Return instance of zerolog logger
 // that should be used throughout Gazelle nix execution
 func GetLogger() *zerolog.Logger {
-	once.Do(func() {
+	once.Do(func() {,
 		loglevel := getLoggingLevel()
 		var logger = zerolog.New(
 			zerolog.ConsoleWriter{Out: os.Stderr},
@@ -61,9 +61,12 @@ func GetLogger() *zerolog.Logger {
 
 			details := []*string{}
 			cw := zerolog.ConsoleWriter{
-				Out:          os.Stderr,
-				FormatLevel:  levelFormatter(),
-				PartsExclude: []string{"message"},
+				Out:              os.Stderr,
+				FormatCaller:     callerFormatter(),
+				FormatFieldName:  fieldNameFormatter(),
+				FormatFieldValue: fieldValueFormatter(),
+				FormatLevel:      levelFormatter(),
+				PartsExclude:     []string{"message"},
 			}
 
 			err2.StackTraceWriter = loggerInstance.
@@ -73,6 +76,24 @@ func GetLogger() *zerolog.Logger {
 	})
 
 	return loggerInstance
+}
+
+func callerFormatter() zerolog.Formatter {
+	return func(i interface{}) string {
+		return fmt.Sprintf("%-70s|", i.(string))
+	}
+}
+
+func fieldValueFormatter() zerolog.Formatter {
+	return func(i interface{}) string {
+		return fmt.Sprintf("\x1b[%dm%s\x1b[0m", COLOR_MAGENTA, i.(string))
+	}
+}
+
+func fieldNameFormatter() zerolog.Formatter {
+	return func(i interface{}) string {
+		return ""
+	}
 }
 
 func levelFormatter() zerolog.Formatter {
