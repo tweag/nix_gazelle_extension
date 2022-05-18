@@ -57,25 +57,25 @@ func GetLogger() *zerolog.Logger {
 		loggerInstance = &logger
 
 		if loglevel == zerolog.TraceLevel {
-			var callerRegex, _ = regexp.Compile(`[a-z][^\\\\\:\|\<\>\"\*\?]*:\d+`)
+			callerRegex, _ := regexp.Compile(`[a-z][^\\\\\:\|\<\>\"\*\?]*:\d+`)
 
 			details := []*string{}
 			cw := zerolog.ConsoleWriter{
 				Out:          os.Stderr,
-				FormatLevel:  LevelFormatter(),
+				FormatLevel:  levelFormatter(),
 				PartsExclude: []string{"message"},
 			}
 
 			err2.StackTraceWriter = loggerInstance.
 				Output(cw).
-				Hook(StackTraceHook(callerRegex, details))
+				Hook(stackTraceHook(callerRegex, details))
 		}
 	})
 
 	return loggerInstance
 }
 
-func LevelFormatter() zerolog.Formatter {
+func levelFormatter() zerolog.Formatter {
 	return func(i interface{}) string {
 		if i == nil {
 			return fmt.Sprintf(
@@ -87,7 +87,7 @@ func LevelFormatter() zerolog.Formatter {
 	}
 }
 
-func StackTraceHook(re *regexp.Regexp, details []*string) zerolog.HookFunc {
+func stackTraceHook(re *regexp.Regexp, details []*string) zerolog.HookFunc {
 	return func(e *zerolog.Event, _ zerolog.Level, msg string) {
 		if strings.Contains(msg, "\n") {
 			e.Discard()
