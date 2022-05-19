@@ -1,6 +1,8 @@
 package gazelle
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,42 +18,78 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type TraceOuts []struct {
-	Cmd struct {
-		Parent int
-		ID     int
-		Dir    string
-		Path   string
-		Args   []string
+type (
+	TraceOuts []struct {
+		Cmd struct {
+			Parent int
+			ID     int
+			Dir    string
+			Path   string
+			Args   []string
+		}
+		Inputs  []string
+		Outputs []string
+		FDs     struct {
+			Num0 string
+			Num1 string
+			Num2 string
+		}
 	}
-	Inputs  []string
-	Outputs []string
-	FDs     struct {
-		Num0 string
-		Num1 string
-		Num2 string
+	LogEvent struct {
+		Path, Runfile, Command, Message, Tracefile string
+		Error                                      error
+		Details                                    []byte
+	}
+)
+
+func (l *LogEvent) SetMessage(m string) {
+	if l.Message == "" {
+		l.Message = m
+	}
+}
+
+func (l LogEvent) Send(logger *zerolog.Logger) {
+	le := logger.Error()
+	fields := map[string]interface{}{
+		"command":   l.Command,
+		"path":      l.Path,
+		"runfile":   l.Runfile,
+		"tracefile": l.Tracefile,
+		"message":   l.Message,
+	}
+	for k, v := range fields {
+		if v == "" {
+			delete(fields, k)
+		}
+	}
+	if l.Error != nil {
+		le = le.Err(l.Error)
+	}
+	le = le.Fields(fields)
+	le.Send()
+
+	if len(l.Details) > 0 {
+		scanner := bufio.NewScanner(bytes.NewReader(l.Details))
+		for scanner.Scan() {
+			logger.Error().Msg(fmt.Sprintf("\x1b[%dm%s\x1b[0m", 31, scanner.Text()))
+		}
 	}
 }
 
 func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []string, err error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
-	errfields := make(map[string]interface{}, 0)
-	out := make([]byte, 0)
+	le := &LogEvent{
+		Path:    nixFile,
+		Runfile: NIX2BUILDPATH,
+	}
 
 	defer err2.Handle(&err, func() {
-		logger.Error().Fields(errfields).Send()
-		errdetails := strings.Split(string(out[:]), "\n")
-		errdetails = errdetails[:len(errdetails)-1]
-		for _, ed := range errdetails {
-			logger.Error().Msg(fmt.Sprintf("\x1b[%dm%s\x1b[0m", 31, ed))
-		}
+		le.Error = err
+		le.Send(logger)
 	})
 
-	errfields["path"] = nixFile
-	errfields["runfile"] = NIX2BUILDPATH
 	scanNix := try.To1(bazel.Runfile(NIX2BUILDPATH))
-
 	tmpfile := try.To1(ioutil.TempFile("", "nix-gzl*.json"))
 
 	defer tmpfile.Close()
@@ -74,22 +112,18 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []st
 		cmd = exec.Command(scanNix, "-d", tmpfile.Name(), "nix-instantiate", nixFile)
 	}
 
-	out, err = cmd.CombinedOutput()
+	le.Details, err = cmd.CombinedOutput()
 	defer err2.Handle(&err, func() {
-		errfields["cmd"] = strings.Join(cmd.Args, " ")
-		if _, k := errfields["message"]; !k {
-			errfields["message"] = "evaluation of nix expression failed"
-		}
+		le.Command = strings.Join(cmd.Args, " ")
+		le.SetMessage("evaluation of nix expression failed")
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 
 	defer err2.Handle(&err, func() {
-		errfields["traceout"] = tmpfile.Name()
-		if _, k := errfields["message"]; !k {
-			errfields["message"] = "unmarshaling of trace output failed"
-		}
+		le.Tracefile = tmpfile.Name()
+		le.SetMessage("unmarshaling of trace output failed")
 	})
 
 	byteValue := try.To1(os.ReadFile(tmpfile.Name()))
