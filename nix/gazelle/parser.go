@@ -35,12 +35,16 @@ type (
 			Num2 string
 		}
 	}
-	LogEvent struct {
-		Path, Runfile, Command, Message, Tracefile string
-		Error                                      error
-		Details                                    []byte
-	}
 )
+type LogEvent struct {
+	Path      string
+	Runfile   string
+	Command   string
+	Message   string
+	Tracefile string
+	Error     error
+	Details   []byte
+}
 
 func (l *LogEvent) SetMessage(m string) {
 	if l.Message == "" {
@@ -49,7 +53,6 @@ func (l *LogEvent) SetMessage(m string) {
 }
 
 func (l LogEvent) Send(logger *zerolog.Logger) {
-	le := logger.Error()
 	fields := map[string]interface{}{
 		"command":   l.Command,
 		"path":      l.Path,
@@ -62,18 +65,26 @@ func (l LogEvent) Send(logger *zerolog.Logger) {
 			delete(fields, k)
 		}
 	}
-	if l.Error != nil {
-		le = le.Err(l.Error)
-	}
-	le = le.Fields(fields)
-	le.Send()
 
-	if len(l.Details) > 0 {
-		scanner := bufio.NewScanner(bytes.NewReader(l.Details))
-		for scanner.Scan() {
-			logger.Error().Msg(fmt.Sprintf("\x1b[%dm%s\x1b[0m", 31, scanner.Text()))
-		}
+	// Log error
+	logger.Error().
+		Err(l.Error).
+		Fields(fields).
+		Send()
+
+	// Log subprocess stderr
+	scanner := bufio.NewScanner(bytes.NewReader(l.Details))
+	for scanner.Scan() {
+		logger.Error().
+			Msg(
+				fmt.Sprintf(
+					"\x1b[%dm%s\x1b[0m",
+					31,
+					scanner.Text(),
+				),
+			)
 	}
+
 }
 
 func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []string, err error) {
@@ -89,6 +100,7 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []st
 		le.Send(logger)
 	})
 
+	// TODO: distinguish between fatal/non fatal errors
 	scanNix := try.To1(bazel.Runfile(NIX2BUILDPATH))
 	tmpfile := try.To1(ioutil.TempFile("", "nix-gzl*.json"))
 
