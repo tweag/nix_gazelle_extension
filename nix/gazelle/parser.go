@@ -1,6 +1,8 @@
 package gazelle
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,43 +13,96 @@ import (
 
 	"github.com/bazelbuild/bazel-gazelle/pathtools"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
+	"github.com/lainio/err2"
+	"github.com/lainio/err2/try"
 	"github.com/rs/zerolog"
 )
 
-type TraceOut struct {
-	Cmd struct {
-		Parent int
-		ID     int
-		Dir    string
-		Path   string
-		Args   []string
+type (
+	TraceOuts []struct {
+		Cmd struct {
+			Parent int
+			ID     int
+			Dir    string
+			Path   string
+			Args   []string
+		}
+		Inputs  []string
+		Outputs []string
+		FDs     struct {
+			Num0 string
+			Num1 string
+			Num2 string
+		}
 	}
-	Inputs  []string
-	Outputs []string
-	FDs     struct {
-		Num0 string
-		Num1 string
-		Num2 string
+)
+type LogEvent struct {
+	Path      string
+	Runfile   string
+	Command   string
+	Message   string
+	Tracefile string
+	Error     error
+	Details   []byte
+}
+
+func (l *LogEvent) SetMessage(m string) {
+	if l.Message == "" {
+		l.Message = m
 	}
 }
 
-func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]string, []string, error) {
+func (l LogEvent) Send(logger *zerolog.Logger) {
+	fields := map[string]interface{}{
+		"command":   l.Command,
+		"path":      l.Path,
+		"runfile":   l.Runfile,
+		"tracefile": l.Tracefile,
+		"message":   l.Message,
+	}
+	for k, v := range fields {
+		if v == "" {
+			delete(fields, k)
+		}
+	}
+
+	// Log error
+	logger.Error().
+		Err(l.Error).
+		Fields(fields).
+		Send()
+
+	// Log subprocess stderr
+	scanner := bufio.NewScanner(bytes.NewReader(l.Details))
+	for scanner.Scan() {
+		logger.Error().
+			Msg(
+				fmt.Sprintf(
+					"\x1b[%dm%s\x1b[0m",
+					31,
+					scanner.Text(),
+				),
+			)
+	}
+
+}
+
+func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []string, err error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
-	scanNix, err := bazel.Runfile(NIX2BUILDPATH)
-	if err != nil {
-		logger.Panic().
-			Err(err).
-			Str("runfile", NIX2BUILDPATH).
-			Msgf("fptrace runfile not found %s", NIX2BUILDPATH)
+	le := &LogEvent{
+		Path:    nixFile,
+		Runfile: NIX2BUILDPATH,
 	}
 
-	tmpfile, err := ioutil.TempFile("", "nix-gzl*.json")
-	if err != nil {
-		logger.Panic().
-			Err(err).
-			Msgf("could not create fptrace output file")
-	}
+	defer err2.Handle(&err, func() {
+		le.Error = err
+		le.Send(logger)
+	})
+
+	// TODO: distinguish between fatal/non fatal errors
+	scanNix := try.To1(bazel.Runfile(NIX2BUILDPATH))
+	tmpfile := try.To1(ioutil.TempFile("", "nix-gzl*.json"))
 
 	defer tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
@@ -69,42 +124,29 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]string,
 		cmd = exec.Command(scanNix, "-d", tmpfile.Name(), "nix-instantiate", nixFile)
 	}
 
-	out, err := cmd.CombinedOutput()
+	le.Details, err = cmd.CombinedOutput()
+	defer err2.Handle(&err, func() {
+		le.Command = strings.Join(cmd.Args, " ")
+		le.SetMessage("evaluation of nix expression failed")
+	})
 	if err != nil {
-		details := strings.Split(string(out[:]), "\n")
-		details = details[:len(details)-1]
-		logger.Error().
-			Err(err).
-			Str("path", nixFile).
-			Msg("evaluation of nix expression failed")
-
-		for i := range details {
-			logger.Error().Msg(details[i])
-		}
-
 		return nil, nil, err
 	}
 
-	var traceOuts []TraceOut
+	defer err2.Handle(&err, func() {
+		le.Tracefile = tmpfile.Name()
+		le.SetMessage("unmarshaling of trace output failed")
+	})
 
-	byteValue, _ := os.ReadFile(tmpfile.Name())
-	err = json.Unmarshal(byteValue, &traceOuts)
+	byteValue := try.To1(os.ReadFile(tmpfile.Name()))
 
-	if err != nil {
-		logger.Error().
-			Err(err).
-			Str("path", nixFile).
-			Msg("unmarshaling of trace output failed")
-		return nil, nil, err
-	}
+	var traceOuts TraceOuts
+	try.To(json.Unmarshal(byteValue, &traceOuts))
 
 	filteredFiles := []string{nixFile}
 
-	var traceOut TraceOut
-	for i := range traceOuts {
-		traceOut = traceOuts[i]
-		for j := range traceOut.Inputs {
-			considered := traceOut.Inputs[j]
+	for _, traceOut := range traceOuts {
+		for _, considered := range traceOut.Inputs {
 			if considered != nixFile && pathtools.HasPrefix(considered, wsroot) {
 				filteredFiles = append(filteredFiles, considered)
 			}
@@ -118,8 +160,7 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) ([]string,
 
 	packages := []string{}
 
-	for i := range filteredFiles {
-		considered := filteredFiles[i]
+	for _, considered := range filteredFiles {
 		if strings.HasSuffix(considered, "default.nix") {
 			packages = append(
 				packages,

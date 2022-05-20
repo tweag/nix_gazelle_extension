@@ -10,6 +10,8 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/language"
 	"github.com/bazelbuild/bazel-gazelle/rule"
+	"github.com/lainio/err2"
+	"github.com/lainio/err2/try"
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/nixconfig"
 	"github.com/tweag/nix_gazelle_extension/nix/gazelle/private/logconfig"
 )
@@ -38,10 +40,11 @@ func SourceFileToNixRules(
 
 	pth := filepath.Join(sourceDirAbs, sourceFile)
 
-	directDeps, chainedDeps, err := nixToDepSets(logger, nixCfg.NixPrelude, pth)
-	if err != nil {
-		return
-	}
+	defer err2.Catch(func(err error) {
+		logger.Error().Err(err)
+	})
+
+	directDeps, chainedDeps := try.To2(nixToDepSets(logger, nixCfg.NixPrelude, pth))
 
 	pkgName := strings.ReplaceAll(sourceDirRel, "/", ".")
 
@@ -126,21 +129,15 @@ func (nixLang *nixLang) GenerateRules(
 		Logger()
 
 	logger.Debug().Msg("")
-	nixConfigs, ok := args.Config.Exts[LANGUAGE_NAME].(nixconfig.NixLanguageConfigs)
-	if !ok {
+
+	defer err2.Catch(func(err error) {
 		logger.Fatal().
-			Err(errAssert).
+			Err(err).
 			Msgf("Cannot extract configs")
-	}
+	})
 
-	cfg, ok := nixConfigs[args.Rel]
-	if !ok {
-		logger.Fatal().
-			Err(errAssert).
-			Msgf("Cannot extract config")
-	}
+	cfg := try.To1(GetNixConfig(args.Config, args.Rel))
 
-	var res language.GenerateResult
 	var wg sync.WaitGroup
 	var rules = make(chan *rule.Rule)
 
@@ -153,6 +150,8 @@ func (nixLang *nixLang) GenerateRules(
 		wg.Add(1)
 		go SourceFileToNixRules(sourceFile, args.Dir, args.Rel, cfg, &wg, rules)
 	}
+
+	var res language.GenerateResult
 
 	// Read of channel is blocking
 	for r := range rules {
