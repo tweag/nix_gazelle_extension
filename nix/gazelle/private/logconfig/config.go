@@ -50,7 +50,6 @@ func GetLogger() *zerolog.Logger {
 		var logger = zerolog.New(
 			zerolog.ConsoleWriter{Out: os.Stderr},
 		).With().
-			Timestamp().
 			Caller().
 			Logger().
 			Level(loglevel)

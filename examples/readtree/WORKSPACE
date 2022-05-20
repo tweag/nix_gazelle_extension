@@ -24,8 +24,8 @@ load(
 
 nixpkgs_local_repository(
     name = "nixpkgs",
-    nix_file = "//nix/nixpkgs:default.nix",
+    nix_file = "nix/nixpkgs/default.nix",
     nix_file_deps = [
-        "//nix/nixpkgs:nixpkgs.json",
+        "nix/nixpkgs/nixpkgs.json",
     ],
 )

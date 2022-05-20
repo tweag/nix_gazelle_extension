@@ -7,5 +7,5 @@ const (
 	PACKAGE_RULE  = "nixpkgs_package"
 
 	// Nix2BuildPath path to a nix evaluator binary.
-	NIX2BUILDPATH = "external/fptrace/bin/fptrace"
+	FPTRACE_PATH = "external/fptrace/bin/fptrace"
 )

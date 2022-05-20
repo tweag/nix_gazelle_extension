@@ -1,7 +1,6 @@
-# BUILD.bazel
+# gazelle:prefix io_tweag_gazelle_nix
 # gazelle:exclude nix
 # gazelle:exclude 3rdparty
-# gazelle:exclude default.nix
 # gazelle:nix_repositories nixpkgs=@nixpkgs
 # gazelle:nix_prelude default.nix
 load(
@@ -13,5 +12,11 @@ nix_gazelle(
     name = "gazelle",
 )
 
-# export prelude
-exports_files(["default.nix"])
+exports_files(
+    glob([
+        # export prelude - has to be included always
+        "default.nix",
+        # for testing purposes
+        "**/*",
+    ])
+)

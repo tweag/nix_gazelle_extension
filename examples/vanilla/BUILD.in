@@ -1,4 +1,4 @@
-# BUILD.bazel
+# gazelle:prefix io_tweag_gazelle_nix
 # gazelle:exclude nix
 # gazelle:nix_repositories nixpkgs=@nixpkgs
 load(
@@ -8,4 +8,11 @@ load(
 
 nix_gazelle(
     name = "gazelle",
+)
+
+# For testing purposes
+exports_files(
+    glob([
+        "**/*",
+    ])
 )
