@@ -1,8 +1,10 @@
 {
-  "go.goroot": "${workspaceFolder}/.goroot",
   "go.gopath": "${workspaceFolder}/.go",
   "go.toolsEnvVars": {
     "GO111MODULE": "on",
     "GOCACHE": "${workspaceFolder}/.gocache",
-  }
+    "GOENV":  "${workspaceFolder}/.gocache"
+  },
+  "nixEnvSelector.args": "--pure",
+  "nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix",
 }
