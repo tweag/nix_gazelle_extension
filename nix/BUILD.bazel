@@ -1,0 +1,1 @@
+exports_files(["nix_gazelle.bash.in"])
