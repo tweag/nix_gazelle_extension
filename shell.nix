@@ -7,6 +7,7 @@ mkShell {
     bazel_5
     binutils
     cacert
+    git
     go_1_18
     go-tools
     nix
@@ -18,10 +19,10 @@ mkShell {
   shellHook = ''
     mkdir -p $(pwd)/.go
     mkdir -p $(pwd)/.gocache
-    ln -fs ${pkgs.go_1_18}/share/go $(pwd)/.goroot
 
     export GO111MODULE=on
     export GOCACHE=$(pwd)/.gocache
+    export GOENV=$(pwd)/env
     export GOPATH=$(pwd)/.go
   '';
 }

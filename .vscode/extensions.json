@@ -1,0 +1,7 @@
+{
+	"recommendations": [
+		"arrterian.nix-env-selector",
+		"golang.go",
+		"BazelBuild.vscode-bazel"
+	],
+}
