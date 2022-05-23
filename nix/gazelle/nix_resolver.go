@@ -40,25 +40,7 @@ func (nlr NixResolver) Imports(
 	ruleStatement *rule.Rule,
 	buildFile *rule.File,
 ) []resolve.ImportSpec {
-	nlr.logger.Debug().
-		Str("step", "gazelle.nixLang.Resolver.Imports").
-		Str("path", buildFile.Pkg).
-		Str("rule", ruleStatement.Name()).
-		Msg("")
-
-	var prefix string
-
-	switch ruleStatement.Kind() {
-	case EXPORT_RULE:
-		prefix = "exports:"
-	case PACKAGE_RULE:
-		prefix = "nixpkgs_package:"
-	}
-
-	return []resolve.ImportSpec{{
-		Lang: LANGUAGE_NAME,
-		Imp:  prefix + ruleStatement.Name(),
-	}}
+	return nil
 }
 
 // Embeds returns a list of labels of rules that the given rule

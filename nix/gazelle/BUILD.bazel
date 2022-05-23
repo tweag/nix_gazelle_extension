@@ -10,7 +10,6 @@ go_library(
         "lang.go",
         "nix_configurer.go",
         "nix_resolver.go",
-        "package.go",
         "parser.go",
         "update.go",
     ],
