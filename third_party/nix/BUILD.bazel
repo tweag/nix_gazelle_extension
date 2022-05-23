@@ -1,6 +1,7 @@
 exports_files(
     [
         "fptrace.nix",
+        "001-fptrace_lstat.patch",
         "nixpkgs.nix",
         "nixpkgs.json",
     ],

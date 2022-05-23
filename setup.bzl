@@ -52,5 +52,8 @@ def io_tweag_gazelle_nix_setup(nixpkgs = None, get_go_from_nix = True):
     nixpkgs_package(
         name = "fptrace",
         nix_file = "@io_tweag_gazelle_nix//third_party/nix:fptrace.nix",
+        nix_file_deps = [
+            "@io_tweag_gazelle_nix//third_party/nix:001-fptrace_lstat.patch",
+        ],
         repository = nixpkgs,
     )
