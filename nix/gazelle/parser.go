@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"sort"
+	"path/filepath"
 	"strings"
 
 	"github.com/bazelbuild/bazel-gazelle/pathtools"
@@ -87,12 +87,79 @@ func (l LogEvent) Send(logger *zerolog.Logger) {
 
 }
 
+func getBazelPackage(workspaceRoot string, filePath string) string {
+	var getNixBzlPackage func(string) string
+	getNixBzlPackage = func(dir string) string {
+		// TODO: NESTED default.nixes in Workspace
+		parentDirContainsNixPackageMarker := fileExists(filepath.Join(dir, "default.nix"))
+		if parentDirContainsNixPackageMarker {
+			return "//" + pathtools.TrimPrefix(
+				dir,
+				workspaceRoot,
+			)
+		}
+
+		if dir == "/" {
+			panic("Attempted to find the parent directory of '/'")
+		}
+		return getNixBzlPackage(filepath.Dir(dir))
+	}
+
+	fileDir := filepath.Dir(filePath)
+	return getNixBzlPackage(fileDir)
+}
+
+func getBazelTarget(workspaceRoot string, filePath string) string {
+	bazelPackage := getBazelPackage(workspaceRoot, filePath)
+	return fmt.Sprintf(
+		"%s:%s",
+		bazelPackage,
+		pathtools.TrimPrefix(
+			pathtools.TrimPrefix(filePath, workspaceRoot),
+			strings.TrimPrefix(bazelPackage, "//"),
+		),
+	)
+}
+
+func parseFpTraceOutput(workspaceRoot string, rootNixDerivPath string, outputs *TraceOuts) (_, _ []string) {
+	if outputs == nil {
+		return
+	}
+	var isInPackage = func(pkg string, target string) bool {
+		// TODO: There has to be a better way!
+		return pathtools.HasPrefix(
+			strings.ReplaceAll(target, ":", string(os.PathSeparator)),
+			pkg,
+		)
+	}
+	var filesInRootNixDerivPackage, filesOutsideOfRootNixDerivPackage []string
+
+	rootNixDerivBazelPackage := getBazelPackage(workspaceRoot, rootNixDerivPath)
+	for _, output := range *outputs {
+		for _, filePath := range output.Inputs {
+			// Skip parsing files outside of Bazel workspace
+			if !pathtools.HasPrefix(filePath, workspaceRoot) {
+				continue
+			}
+
+			bazelTarget := getBazelTarget(workspaceRoot, filePath)
+			if isInPackage(rootNixDerivBazelPackage, bazelTarget) {
+				filesInRootNixDerivPackage = append(filesInRootNixDerivPackage, bazelTarget)
+			} else {
+				filesOutsideOfRootNixDerivPackage = append(filesOutsideOfRootNixDerivPackage, bazelTarget)
+			}
+		}
+	}
+
+	return filesInRootNixDerivPackage, filesOutsideOfRootNixDerivPackage
+}
+
 func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []string, err error) {
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
 	le := &LogEvent{
 		Path:    nixFile,
-		Runfile: NIX2BUILDPATH,
+		Runfile: FPTRACE_PATH,
 	}
 
 	defer err2.Handle(&err, func() {
@@ -101,113 +168,53 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []st
 	})
 
 	// TODO: distinguish between fatal/non fatal errors
-	scanNix := try.To1(bazel.Runfile(NIX2BUILDPATH))
+	pathToFpTrace := try.To1(bazel.Runfile(FPTRACE_PATH))
 	tmpfile := try.To1(ioutil.TempFile("", "nix-gzl*.json"))
 
 	defer tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
-	var cmd *exec.Cmd
-
+	nixInstantiatePreludeParams := ""
 	if len(nixPrelude) > 0 {
-		cmd = exec.Command(
-			scanNix,
-			"-d",
-			tmpfile.Name(),
-			"nix-instantiate",
-			wsroot+"/"+nixPrelude,
-			"--argstr",
-			"nix_file",
-			nixFile,
-		)
-	} else {
-		cmd = exec.Command(scanNix, "-d", tmpfile.Name(), "nix-instantiate", nixFile)
+		// Thank you golang, that I may not name string formating params, that makes things so much more readable
+		// Should use: os.PathSeparator
+		// <workspace-root-path>/<nix-prelude-file> --args nixfile=
+		nixInstantiatePreludeParams = fmt.Sprintf("%s/%s --argstr nix_file ", wsroot, nixPrelude)
 	}
 
-	le.Details, err = cmd.CombinedOutput()
+	// Thank you golang, that I may not name string formating params, that makes things so much more readable
+	// -d <tmp-dir-path> nix-instantiate <nixPrelude><path-to-nix-file>
+	var fpTraceParams = fmt.Sprintf(
+		"-d %s nix-instantiate %s%s",
+		tmpfile.Name(),
+		nixInstantiatePreludeParams,
+		nixFile,
+	)
+
+	var outputBuf bytes.Buffer
+	cmd := exec.Command(
+		pathToFpTrace,
+		strings.Split(fpTraceParams, " ")...,
+	)
+	cmd.Stdout = &outputBuf
+	cmd.Stderr = &outputBuf
+
 	defer err2.Handle(&err, func() {
+		le.Details = outputBuf.Bytes()
 		le.Command = strings.Join(cmd.Args, " ")
 		le.SetMessage("evaluation of nix expression failed")
 	})
-	if err != nil {
-		return nil, nil, err
-	}
+	try.To(cmd.Run())
 
 	defer err2.Handle(&err, func() {
 		le.Tracefile = tmpfile.Name()
 		le.SetMessage("unmarshaling of trace output failed")
 	})
-
 	byteValue := try.To1(os.ReadFile(tmpfile.Name()))
 
 	var traceOuts TraceOuts
 	try.To(json.Unmarshal(byteValue, &traceOuts))
 
-	filteredFiles := []string{nixFile}
-
-	for _, traceOut := range traceOuts {
-		for _, considered := range traceOut.Inputs {
-			if considered != nixFile && pathtools.HasPrefix(considered, wsroot) {
-				filteredFiles = append(filteredFiles, considered)
-			}
-		}
-	}
-
-	sort.Strings(filteredFiles)
-	sort.Slice(filteredFiles, func(i, j int) bool {
-		return len(filteredFiles[i]) > len(filteredFiles[j])
-	})
-
-	packages := []string{}
-
-	for _, considered := range filteredFiles {
-		if strings.HasSuffix(considered, "default.nix") {
-			packages = append(
-				packages,
-				strings.TrimSuffix(considered, "default.nix"),
-			)
-		}
-	}
-
-	directDeps := []string{}
-	chainedDeps := []string{}
-	targets := []string{}
-
-	for _, consideredPackage := range packages {
-		temp := filteredFiles[:0]
-
-		for _, consideredFile := range filteredFiles {
-			if strings.HasPrefix(consideredFile, consideredPackage) {
-				pkg := trimTrailingSlash(pathtools.TrimPrefix(consideredPackage, wsroot))
-				reltarget := pathtools.TrimPrefix(consideredFile, consideredPackage)
-				target := fmt.Sprintf("//%s:%s", pkg, reltarget)
-				targets = append(targets, target)
-			} else {
-				temp = append(temp, consideredFile)
-			}
-		}
-
-		filteredFiles = temp
-	}
-
-	nixPackage := "//" + pathtools.TrimPrefix(
-		strings.TrimSuffix(nixFile, "/default.nix"),
-		wsroot,
-	)
-	for _, x := range targets {
-		if strings.HasPrefix(x, nixPackage) {
-			directDeps = append(directDeps, x)
-		}
-
-		chainedDeps = append(chainedDeps, x)
-	}
-
-	return directDeps, chainedDeps, nil
-}
-
-func trimTrailingSlash(p string) string {
-	for len(p) > 1 && p[len(p)-1] == '/' {
-		p = p[:len(p)-1]
-	}
-	return p
+	directDeps, externalDeps := parseFpTraceOutput(wsroot, nixFile, &traceOuts)
+	return directDeps, externalDeps, nil
 }

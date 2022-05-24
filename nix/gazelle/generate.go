@@ -61,7 +61,7 @@ func SourceFileToNixRules(
 		logger.Error().Err(err)
 	})
 
-	directDeps, chainedDeps := try.To2(nixToDepSets(logger, nixCfg.NixPrelude, pth))
+	directDeps, externalDeps := try.To2(nixToDepSets(logger, nixCfg.NixPrelude, pth))
 
 	pkgName := strings.ReplaceAll(sourceDirRel, "/", ".")
 
@@ -79,7 +79,7 @@ func SourceFileToNixRules(
 		kind: MANIFEST_RULE,
 		attrs: map[string]interface{}{
 			"name":          pkgName,
-			"nix_file_deps": chainedDeps,
+			"nix_file_deps": append(externalDeps, directDeps...),
 			"repositories":  nixCfg.NixRepositories,
 		},
 		comments: []string{

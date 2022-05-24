@@ -24,5 +24,8 @@ mkShell {
     export GOCACHE=$(pwd)/.gocache
     export GOENV=$(pwd)/env
     export GOPATH=$(pwd)/.go
+
+    # Ensure fptrace nix-instantiate works
+    export NIX_PATH=nixpkgs=$(pwd)/third_party/nix/nixpkgs.nix
   '';
 }
