@@ -10,7 +10,7 @@ load(
 )
 
 nix_gazelle(
-    name = "update-all",
+    name = "gazelle",
 )
 
 # export prelude

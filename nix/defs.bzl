@@ -75,6 +75,7 @@ def nix_gazelle(name, **kwargs):
     binary_name = name + "-binary"
     update_name = name + "-update"
     update_repos_name = name + "-update-repos"
+    update_all_name = name + "-update-all"
 
 
     gazelle(
@@ -116,7 +117,7 @@ def nix_gazelle(name, **kwargs):
         **kwargs
     )
     native.sh_binary(
-        name = name,
+        name = update_all_name,
         srcs = [runner_name],
         tags = ["manual"],
     )
