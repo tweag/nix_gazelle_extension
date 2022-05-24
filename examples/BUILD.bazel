@@ -8,7 +8,7 @@ load(
 gazelle_binary(
     name = "gazelle_binary",
     languages = DEFAULT_LANGUAGES + [
-        "@io_tweag_gazelle_nix//nix/gazelle"
+        "@io_tweag_gazelle_nix//nix/gazelle",
     ],
 )
 
