@@ -6,9 +6,9 @@ go_library(
     importpath = "github.com/tweag/nix_gazelle_extension/nix/gazelle/private/logconfig",
     visibility = ["//nix/gazelle:__subpackages__"],
     deps = [
+        "@com_github_lainio_err2//:go_default_library",
         "@com_github_pkg_errors//:errors",
         "@com_github_rs_zerolog//:zerolog",
         "@com_github_rs_zerolog//pkgerrors",
-        "@com_github_lainio_err2//:go_default_library",
     ],
 )

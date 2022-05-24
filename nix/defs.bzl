@@ -2,7 +2,6 @@ load(
     "@bazel_skylib//lib:shell.bzl",
     "shell",
 )
-
 load(
     "@bazel_gazelle//:def.bzl",
     "DEFAULT_LANGUAGES",
@@ -77,7 +76,6 @@ def nix_gazelle(name, **kwargs):
     update_repos_name = name + "-update-repos"
     update_all_name = name + "-update-all"
 
-
     gazelle(
         name = gazelle_name,
         gazelle = "//:" + binary_name,
@@ -121,4 +119,3 @@ def nix_gazelle(name, **kwargs):
         srcs = [runner_name],
         tags = ["manual"],
     )
-
