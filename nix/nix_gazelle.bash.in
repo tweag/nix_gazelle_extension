@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+# Copyright 2017 The Bazel Authors. All rights reserved.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#    http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+@@GENERATED_MESSAGE@@
+
+set -euo pipefail
+
+RUNNER_LABEL=@@RUNNER_LABEL@@
+UPDATE_SHORT_PATH=@@UPDATE_SHORT_PATH@@
+UPDATE_REPOS_SHORT_PATH=@@UPDATE_REPOS_SHORT_PATH@@
+
+UPDATE_LABEL=@@UPDATE_LABEL@@
+UPDATE_REPOS_LABEL=@@UPDATE_REPOS_LABEL@@
+
+
+# find_runfile prints the location of a runfile in the source workspace,
+# either by reading the symbolic link or reading the runfiles manifest.
+function find_runfile {
+  local runfile=$1
+  if [ -f "$runfile" ]; then
+    readlink "$runfile"
+    return
+  fi
+  runfile=$(echo "$runfile" | sed -e 's!^\(\.\./\|external/\)!!')
+  if grep -q "^$runfile" "$0.runfiles_manifest"; then
+    grep "^$runfile" "$0.runfiles_manifest" | head -n 1 | cut -d' ' -f2
+    return
+  fi
+  # printing nothing indicates failure
+}
+
+# Invoke Gazelle.
+# Note that we don't change directories first; if we did, Gazelle wouldn't be
+# able to find runfiles, and some extensions rely on that. Gazelle can use
+# BUILD_WORKSPACE_DIRECTORY to interpret relative paths on the command line.
+update_short_path=$(find_runfile "$UPDATE_SHORT_PATH")
+if [ -z "$update_short_path" ]; then
+  echo "error: could not locate gazelle binary" >&2
+  exit 1
+fi
+
+update_repos_short_path=$(find_runfile "$UPDATE_REPOS_SHORT_PATH")
+if [ -z "$update_repos_short_path" ]; then
+  echo "error: could not locate gazelle binary" >&2
+  exit 1
+fi
+
+if [ -z "${BUILD_WORKSPACE_DIRECTORY-}" ]; then
+  echo "error: BUILD_WORKSPACE_DIRECTORY not set" >&2
+  exit 1
+fi
+
+"$update_short_path"
+"$update_repos_short_path"
