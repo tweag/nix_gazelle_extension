@@ -2,6 +2,8 @@ package nixconfig
 
 import (
 	"path/filepath"
+
+	"github.com/bazelbuild/bazel-gazelle/config"
 )
 
 const (
@@ -15,7 +17,7 @@ type NixLanguageConfig struct {
 
 	NixPrelude      string
 	NixRepositories map[string]string
-	Wsmode          bool
+	Config          config.Config
 }
 
 // NewChild creates a new child Config. It inherits desired values from the
@@ -25,7 +27,7 @@ func (c *NixLanguageConfig) NewChild() *NixLanguageConfig {
 		Parent:          c,
 		NixPrelude:      c.NixPrelude,
 		NixRepositories: c.NixRepositories,
-		Wsmode:          c.Wsmode,
+		Config:          c.Config,
 	}
 }
 
@@ -34,7 +36,7 @@ func New() *NixLanguageConfig {
 	return &NixLanguageConfig{
 		NixPrelude:      "",
 		NixRepositories: make(map[string]string),
-		Wsmode:          false,
+		Config:          *config.New(),
 	}
 }
 

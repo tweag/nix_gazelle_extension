@@ -4,5 +4,8 @@ go_library(
     name = "nixconfig",
     srcs = ["config.go"],
     importpath = "github.com/tweag/nix_gazelle_extension/nix/gazelle/nixconfig",
+    deps = [
+        "@bazel_gazelle//config:go_default_library",
+    ],
     visibility = ["//visibility:public"],
 )

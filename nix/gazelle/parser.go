@@ -155,6 +155,7 @@ func parseFpTraceOutput(workspaceRoot string, rootNixDerivPath string, outputs *
 }
 
 func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []string, err error) {
+	// TODO: Lookupenv
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
 	le := &LogEvent{
