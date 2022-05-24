@@ -12,30 +12,13 @@ gazelle_binary(
     ],
 )
 
-filegroup(
-    name = "simple",
-    srcs = glob([
-        "vanilla/WORKSPACE",
-        "vanilla/**",
-    ]),
-)
-
-filegroup(
-    name = "readtree",
-    srcs = glob([
-        "readtree/WORKSPACE",
-        "readtree/**",
-    ]),
-)
-
-gazelle_generation_test(
-    name = "test-simple-project-structure",
+[gazelle_generation_test(
+    # Name the test the path to the directory containing the WORKSPACE file.
+    name = file[0:-len("/WORKSPACE")],
     gazelle_binary = ":gazelle_binary",
-    test_data = [":simple"],
-)
-
-gazelle_generation_test(
-    name = "test-readtree-project-structure",
-    gazelle_binary = ":gazelle_binary",
-    test_data = [":readtree"],
-)
+    test_data = glob(
+        include = [file[0:-len("/WORKSPACE")] + "/**"],
+    ),
+) for file in glob(
+    include = ["**/WORKSPACE"],
+) if file != "BUILD.bazel"]

@@ -12,11 +12,4 @@ nix_gazelle(
     name = "gazelle",
 )
 
-exports_files(
-    glob([
-        # export prelude - has to be included always
-        "default.nix",
-        # for testing purposes
-        "**/*",
-    ])
-)
+exports_files(["default.nix"])

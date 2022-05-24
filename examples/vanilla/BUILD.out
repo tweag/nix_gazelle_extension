@@ -9,10 +9,3 @@ load(
 nix_gazelle(
     name = "gazelle",
 )
-
-# For testing purposes
-exports_files(
-    glob([
-        "**/*",
-    ]),
-)
