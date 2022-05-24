@@ -4,7 +4,7 @@ load(
     "gazelle",
     "gazelle_binary",
 )
-load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
+load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
 
 gazelle_binary(
     name = "gazelle_binary",
@@ -25,5 +25,10 @@ gazelle(
 
 buildifier(
     name = "buildifier",
+    exclude_patterns = [
+        "./.go/*",
+        "./.go*/*",
+        "./.git/*",
+    ],
     visibility = ["//visibility:private"],
 )
