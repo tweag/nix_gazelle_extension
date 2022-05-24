@@ -4,6 +4,34 @@ load(
     "gazelle_binary",
     "gazelle_generation_test",
 )
+load(
+    "@cgrindel_bazel_starlib//updatesrc:defs.bzl",
+    "updatesrc_update",
+)
+
+srcs = glob(include = ["**/BUILD.in"])
+
+outs = [file[0:-len(".in")] + ".bazel" for file in srcs]
+
+[
+    genrule(
+        name = "gen_" + outs[idx],
+        srcs = [srcs[idx]],
+        outs = [outs[idx]],
+        cmd = """\
+ecat $(location {src}) >> $@
+""".format(src = srcs[idx]),
+    )
+    for idx in range(len(srcs))
+]
+
+# For manual execution
+# creates BUILD.bazel files out of BUILD.in files
+updatesrc_update(
+    name = "generate",
+    srcs = outs,
+    outs = srcs,
+)
 
 gazelle_binary(
     name = "gazelle_binary",
