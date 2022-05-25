@@ -20,7 +20,6 @@ io_tweag_gazelle_nix_setup()
 load(
     "@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl",
     "nixpkgs_local_repository",
-    "nixpkgs_package",
 )
 
 nixpkgs_local_repository(
