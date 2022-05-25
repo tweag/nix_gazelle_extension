@@ -1,2 +1,1 @@
 build --host_platform=@rules_nixpkgs_core//platforms:host
-test --test_env=NIX_PATH

@@ -61,7 +61,7 @@ func SourceFileToNixRules(
 		logger.Error().Err(err)
 	})
 
-	directDeps, externalDeps := try.To2(nixToDepSets(logger, nixCfg.NixPrelude, pth))
+	directDeps, externalDeps := try.To2(nixToDepSets(logger, nixCfg.NixPrelude, nixCfg.NixPath, pth))
 
 	pkgName := strings.ReplaceAll(sourceDirRel, "/", ".")
 

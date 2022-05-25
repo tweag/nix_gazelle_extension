@@ -154,7 +154,7 @@ func parseFpTraceOutput(workspaceRoot string, rootNixDerivPath string, outputs *
 	return filesInRootNixDerivPackage, filesOutsideOfRootNixDerivPackage
 }
 
-func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []string, err error) {
+func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixPath, nixFile string) (_, _ []string, err error) {
 	// TODO: Lookupenv
 	wsroot := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 
@@ -186,10 +186,11 @@ func nixToDepSets(logger *zerolog.Logger, nixPrelude, nixFile string) (_, _ []st
 	// Thank you golang, that I may not name string formating params, that makes things so much more readable
 	// -d <tmp-dir-path> nix-instantiate <nixPrelude><path-to-nix-file>
 	var fpTraceParams = fmt.Sprintf(
-		"-d %s nix-instantiate %s%s",
+		"-d %s nix-instantiate %s%s -I %s",
 		tmpfile.Name(),
 		nixInstantiatePreludeParams,
 		nixFile,
+		os.ExpandEnv(nixPath),
 	)
 
 	var outputBuf bytes.Buffer
