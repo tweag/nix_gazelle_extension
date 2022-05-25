@@ -1,1 +1,3 @@
-exports_files(["nix_gazelle.bash.in"])
+exports_files(
+    ["nix_gazelle.bash.in"],
+)

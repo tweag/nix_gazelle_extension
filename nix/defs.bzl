@@ -54,11 +54,11 @@ _nix_gazelle_runner = rule(
     attrs = {
         "update_command": attr.label(
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "update_repos_command": attr.label(
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_template": attr.label(
             default = "@io_tweag_gazelle_nix//nix:nix_gazelle.bash.in",

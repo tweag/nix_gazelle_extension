@@ -19,7 +19,7 @@ outs = [file[0:-len(".in")] + ".bazel" for file in srcs]
         srcs = [srcs[idx]],
         outs = [outs[idx]],
         cmd = """\
-ecat $(location {src}) >> $@
+cat $(location {src}) >> $@
 """.format(src = srcs[idx]),
     )
     for idx in range(len(srcs))
