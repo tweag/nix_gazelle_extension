@@ -1,6 +1,6 @@
 # gazelle:prefix io_tweag_gazelle_nix
 # gazelle:exclude nix
-# gazelle:nix_repositories nixpkgs=@nixpkgs
+# gazelle:nix_repositories nixpkgs=@nixpkgs=nix/nixpkgs/default.nix
 load(
     "@io_tweag_gazelle_nix//nix:defs.bzl",
     "nix_gazelle",
