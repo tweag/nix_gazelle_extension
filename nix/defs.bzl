@@ -9,11 +9,6 @@ load(
     "gazelle_binary",
 )
 
-def export_nix(name = "export_nix", files = []):
-    """ This macro makes it possible for gazelle to store additional information. """
-    # Filegroup to resolve files passed as targets
-    native.filegroup(name = name, srcs = files, visibility = ["//visibility:public"])
-
 def nixpkgs_package_manifest(**kwargs):
     pass
 

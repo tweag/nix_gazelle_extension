@@ -2,7 +2,7 @@ package gazelle
 
 const (
 	LANGUAGE_NAME = "nix"
-	EXPORT_RULE   = "export_nix"
+	EXPORT_RULE   = "filegroup"
 	MANIFEST_RULE = "nixpkgs_package_manifest"
 	PACKAGE_RULE  = "nixpkgs_package"
 

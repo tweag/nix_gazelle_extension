@@ -36,7 +36,6 @@ func (*nixLang) Loads() []rule.LoadInfo {
 		{
 			Name: "@io_tweag_gazelle_nix//nix:defs.bzl",
 			Symbols: []string{
-				EXPORT_RULE,
 				MANIFEST_RULE,
 			},
 		},
