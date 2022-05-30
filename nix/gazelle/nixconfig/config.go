@@ -17,6 +17,7 @@ type NixLanguageConfig struct {
 
 	NixPrelude      string
 	NixRepositories map[string]string
+	NixPath         string
 	Config          config.Config
 }
 
@@ -27,6 +28,7 @@ func (c *NixLanguageConfig) NewChild() *NixLanguageConfig {
 		Parent:          c,
 		NixPrelude:      c.NixPrelude,
 		NixRepositories: c.NixRepositories,
+		NixPath:         c.NixPath,
 		Config:          c.Config,
 	}
 }
@@ -36,6 +38,7 @@ func New() *NixLanguageConfig {
 	return &NixLanguageConfig{
 		NixPrelude:      "",
 		NixRepositories: make(map[string]string),
+		NixPath:         "",
 		Config:          *config.New(),
 	}
 }

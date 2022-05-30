@@ -3,6 +3,7 @@ package gazelle
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"strings"
 
 	"github.com/bazelbuild/bazel-gazelle/config"
@@ -117,24 +118,34 @@ func parseNixPrelude(nixConfig *nixconfig.NixLanguageConfig, value string) (err 
 }
 
 func parseNixRepositories(nixConfig *nixconfig.NixLanguageConfig, value string) (err error) {
-	const parts = 2
+	const parts = 3
 
-	pairs := strings.Split(value, " ")
-	keyValuePair := make([]string, 0, len(pairs)*parts)
+	triples := strings.Split(value, " ")
+	labelChannelPathTriple := make([]string, 0, len(triples)*parts)
 
-	for _, key := range pairs {
-		keyValuePair = append(keyValuePair, strings.Split(key, "=")...)
+	for _, key := range triples {
+		labelChannelPathTriple = append(labelChannelPathTriple, strings.Split(key, "=")...)
 	}
 
-	if len(keyValuePair)%2 != 0 {
+	if len(labelChannelPathTriple)%3 != 0 {
 		return errParse
 	}
 
 	repositories := make(map[string]string)
-	for i := 0; i < len(keyValuePair); i += 2 {
-		repositories[keyValuePair[i]] = keyValuePair[i+1]
-		nixConfig.NixRepositories = repositories
+	paths := make([]string, 0)
+	for i := 0; i < len(labelChannelPathTriple); i += 3 {
+		repositories[labelChannelPathTriple[i]] = labelChannelPathTriple[i+1]
+		paths = append(
+			paths,
+			fmt.Sprintf(
+				"%s=${BUILD_WORKSPACE_DIRECTORY}/%s",
+				labelChannelPathTriple[i],
+				labelChannelPathTriple[i+2],
+			),
+		)
 	}
+	nixConfig.NixRepositories = repositories
+	nixConfig.NixPath = strings.Join(paths, ":")
 
 	return nil
 }

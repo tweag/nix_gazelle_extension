@@ -5,6 +5,8 @@ nixpkgs_package_manifest(
     name = "folks.lone-wolf",
     nix_file = "//folks/lone-wolf:default.nix",
     nix_file_deps = [
+        "//nix/nixpkgs:default.nix",
+        "//nix/nixpkgs:nixpkgs.json",
         "//folks/lone-wolf:default.nix",
         "//folks/lone-wolf:src/truth.source",
     ],
