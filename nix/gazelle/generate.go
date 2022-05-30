@@ -89,7 +89,7 @@ func SourceFileToNixRules(
 
 	if len(nixCfg.NixPrelude) > 0 {
 		nrap.attrs["nix_file"] = fmt.Sprintf("//:%s", nixCfg.NixPrelude)
-		nrap.attrs["nix_opts"] = []string{
+		nrap.attrs["nixopts"] = []string{
 			"--argstr",
 			"nix_file",
 			filepath.Join(sourceDirRel, sourceFile),
