@@ -1,6 +1,8 @@
 package gazelle
 
 import (
+	"strings"
+
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/rule"
 )
@@ -10,8 +12,8 @@ import (
 // that delete or rename rules should not be performed.
 func (nixLang *nixLang) Fix(c *config.Config, buildFile *rule.File) {
 	for _, loadStatement := range buildFile.Loads {
-		if loadStatement.Has(EXPORT_RULE) {
-			loadStatement.Remove(EXPORT_RULE)
+		if loadStatement.Has(MANIFEST_RULE) {
+			loadStatement.Remove(MANIFEST_RULE)
 
 			if loadStatement.IsEmpty() {
 				loadStatement.Delete()
@@ -22,7 +24,11 @@ func (nixLang *nixLang) Fix(c *config.Config, buildFile *rule.File) {
 	var knownRuleStatements []*rule.Rule
 
 	for _, ruleStatement := range buildFile.Rules {
-		if ruleStatement.Kind() == EXPORT_RULE {
+		if ruleStatement.Kind() == MANIFEST_RULE {
+			knownRuleStatements = append(knownRuleStatements, ruleStatement)
+			continue
+		}
+		if ruleStatement.Kind() == EXPORT_RULE && strings.HasSuffix(ruleStatement.AttrString("name"), "-exports") {
 			knownRuleStatements = append(knownRuleStatements, ruleStatement)
 		}
 	}
