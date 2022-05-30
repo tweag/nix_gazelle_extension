@@ -48,7 +48,10 @@ func GetLogger() *zerolog.Logger {
 	once.Do(func() {
 		loglevel := getLoggingLevel()
 		var logger = zerolog.New(
-			zerolog.ConsoleWriter{Out: os.Stderr},
+			zerolog.ConsoleWriter{
+				Out:          os.Stderr,
+				PartsExclude: []string{"time"},
+			},
 		).With().
 			Caller().
 			Logger().

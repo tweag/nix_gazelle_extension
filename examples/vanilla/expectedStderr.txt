@@ -1,2 +1,2 @@
-[90m<nil>[0m [32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
-[90m<nil>[0m [32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
+[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
+[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
