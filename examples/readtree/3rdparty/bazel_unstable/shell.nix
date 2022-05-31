@@ -1,7 +1,9 @@
-{ pkgs, src, bazel }:
-
-with pkgs;
-let
+{
+  pkgs,
+  src,
+  bazel,
+}:
+with pkgs; let
   updater = writeScript "update-bazel-deps.sh" ''
     #!${runtimeShell}
     cd ${src} && \
@@ -12,12 +14,13 @@ let
         --output build \
     | ${python3}/bin/python3 ${./update-srcDeps.py}
   '';
-in mkShell {
-  name = "bazel-env";
+in
+  mkShell {
+    name = "bazel-env";
 
-  buildInputs = [ python3 bazel ];
+    buildInputs = [python3 bazel];
 
-  shellHook = ''
-    ${updater} > ./src-deps.json
-  '';
-}
+    shellHook = ''
+      ${updater} > ./src-deps.json
+    '';
+  }

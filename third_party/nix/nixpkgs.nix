@@ -4,5 +4,6 @@ let
     url = srcDef.url;
     sha256 = srcDef.sha256;
   };
-in args@{ ... }:
-import nixpkgs (args // { overlays = args.overlays or [ ] ++ [ ]; })
+in
+  args @ {...}:
+    import nixpkgs (args // {overlays = args.overlays or [] ++ [];})

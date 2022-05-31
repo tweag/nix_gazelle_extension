@@ -1,31 +1,41 @@
-{ pkgs ? import ./third_party/nix/nixpkgs.nix { } }:
+{pkgs ? import ./third_party/nix/nixpkgs.nix {}}:
+with pkgs; let
+  inputs = [
+    # formatters
+    treefmt
+    alejandra
+    bazel-buildtools
+    shellcheck
+    shfmt
+    nodePackages.prettier
+    nodePackages.prettier-plugin-toml
+    gotools
+    go-tools
 
-with pkgs;
-
-mkShell {
-  buildInputs = [
     bazel_5
+
+    direnv
     binutils
     cacert
     git
     go_1_18
-    go-tools
     nix
-    nixfmt
     openjdk11
     python3
     less
   ];
-  shellHook = ''
-    mkdir -p $(pwd)/.go
-    mkdir -p $(pwd)/.gocache
+in
+  mkShell {
+    buildInputs = inputs;
+    shellHook = ''
+      mkdir -p $(pwd)/.go
+      mkdir -p $(pwd)/.gocache
 
-    export GO111MODULE=on
-    export GOCACHE=$(pwd)/.gocache
-    export GOENV=$(pwd)/env
-    export GOPATH=$(pwd)/.go
+      export GO111MODULE=on
+      export GOCACHE=$(pwd)/.gocache
+      export GOENV=$(pwd)/env
+      export GOPATH=$(pwd)/.go
 
-    # Ensure fptrace nix-instantiate works
-    export NIX_PATH=nixpkgs=$(pwd)/third_party/nix/nixpkgs.nix
-  '';
-}
+      export NODE_PATH=${pkgs.nodePackages.prettier-plugin-toml}/lib/node_modules:$NODE_PATH
+    '';
+  }
