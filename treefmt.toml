@@ -1,0 +1,68 @@
+[global]
+excludes = [".git", ".go", ".gocache", ".goroot"]
+
+[formatter.nix]
+command = "alejandra"
+includes = ["*.nix"]
+
+[formatter.gofmt]
+command = "gofmt"
+options = ["-w"]
+includes = ["*.go"]
+
+[formatter.goimports]
+command = "goimports"
+options = ["-w"]
+includes = ["*.go"]
+
+[formatter.prettier]
+command = "prettier"
+options = ["--plugin", "prettier-plugin-toml", "--write"]
+includes = [
+  "*.css",
+  "*.html",
+  "*.js",
+  "*.json",
+  "*.jsx",
+  "*.md",
+  "*.mdx",
+  "*.scss",
+  "*.toml",
+  "*.ts",
+  "*.yaml",
+]
+
+[formatter.buildifier]
+command = "buildifier"
+includes = ["BUILD", "WORKSPACE", "*.bazel", "*.bzl"]
+
+[formatter.buildifier-testfiles]
+command = "/bin/sh"
+options = [
+  "-euc",
+  """
+for f in "$@"; do
+  { rm "$f" && buildifier > "$f"; } < "$f"
+done
+    """,
+    "--", # bash swallows the second argument when using -c
+]
+includes = [
+    "BUILD.in",
+    "BUILD.out"
+]
+
+[formatter.shell]
+command = "/bin/sh"
+options = [
+    "-euc",
+    """
+# First lint all the scripts
+shellcheck "$@"
+# Then format them
+shfmt -i 2 -s -w "$@"
+    """,
+  "--", # bash swallows the second argument when using -c
+
+]
+includes = ["*.sh"]

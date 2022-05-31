@@ -1,5 +1,5 @@
 {pkgs ? import <nixpkgs> {}}:
-import 
+import
 (
   pkgs.applyPatches {
     name = "fptrace";

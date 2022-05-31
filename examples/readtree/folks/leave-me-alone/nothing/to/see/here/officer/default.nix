@@ -1,5 +1,4 @@
-{ pkgs }:
-
+{pkgs}:
 pkgs.stdenv.mkDerivation rec {
   name = "close-one";
   src = ./src;
@@ -8,6 +7,5 @@ pkgs.stdenv.mkDerivation rec {
     mkdir -p $out/bin
     cp $src/truth.source $out/bin/truth.bin
   '';
-  buildInputs = [ ];
+  buildInputs = [];
 }
-
