@@ -1,2 +1,21 @@
-bazel-*
+# Bazel does not yet support wildcards or other .gitignore semantics for
+# .bazelignore. Two issues for this feature request are outstanding:
+# https://github.com/bazelbuild/bazel/issues/7093
+# https://github.com/bazelbuild/bazel/issues/8106
+.git
 .go
+
+bazel-bin
+bazel-nix_gazelle_extension
+bazel-out
+bazel-testlogs
+bazel-vanilla
+bazel-readtree
+examples/vanilla/bazel-bin
+examples/vanilla/bazel-out
+examples/vanilla/bazel-testlogs
+examples/vanilla/bazel-vanilla
+examples/readtree/bazel-bin
+examples/readtree/bazel-out
+examples/readtree/bazel-testlogs
+examples/readtree/bazel-readtree
