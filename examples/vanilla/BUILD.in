@@ -9,3 +9,11 @@ load(
 nix_gazelle(
     name = "gazelle",
 )
+
+genrule(
+    name = "hello-cow",
+    srcs = [],
+    outs = ["greetings.txt"],
+    cmd = "./$(location @folks.cowsay//:bin/cowsay) 'Nix is pretty cool' > \"$@\"",
+    tools = ["@folks.cowsay//:bin/cowsay"],
+)

@@ -1,4 +1,4 @@
-workspace(name = "gazelle_nix_example_vanilla")
+workspace(name = "gazelle_nix_example_readtree")
 
 local_repository(
     name = "io_tweag_gazelle_nix",

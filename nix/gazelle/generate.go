@@ -52,7 +52,7 @@ func SourceFileToNixRules(
 	}
 
 	logger.Info().
-		Str("file", sourceFile).
+		Str("file", filepath.Join(sourceDirRel, sourceFile)).
 		Msg("parsing nix file")
 
 	pth := filepath.Join(sourceDirAbs, sourceFile)
@@ -61,9 +61,9 @@ func SourceFileToNixRules(
 		logger.Error().Err(err)
 	})
 
-	directDeps, externalDeps := try.To2(nixToDepSets(logger, nixCfg.NixPrelude, nixCfg.NixPath, pth))
-
 	pkgName := strings.ReplaceAll(sourceDirRel, "/", ".")
+
+	directDeps, externalDeps := try.To2(nixToDepSets(logger, nixCfg.NixPrelude, nixCfg.NixPath, pth, pkgName))
 
 	// TODO: instead of using template file
 	// use already existing/generated one.
@@ -89,11 +89,7 @@ func SourceFileToNixRules(
 
 	if len(nixCfg.NixPrelude) > 0 {
 		nrap.attrs["nix_file"] = fmt.Sprintf("//:%s", nixCfg.NixPrelude)
-		nrap.attrs["nixopts"] = []string{
-			"--argstr",
-			"nix_file",
-			filepath.Join(sourceDirRel, sourceFile),
-		}
+		nrap.attrs["attribute_path"] = pkgName
 	} else {
 		nrap.attrs["nix_file"] = fmt.Sprintf("//%s:%s", sourceDirRel, sourceFile)
 	}

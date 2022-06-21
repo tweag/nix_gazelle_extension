@@ -1,6 +1,5 @@
 # gazelle:prefix io_tweag_gazelle_nix
 # gazelle:exclude nix
-# gazelle:exclude 3rdparty
 # gazelle:nix_repositories nixpkgs=@nixpkgs=nix/nixpkgs/default.nix
 # gazelle:exclude default.nix
 # gazelle:nix_prelude default.nix
@@ -11,6 +10,14 @@ load(
 
 nix_gazelle(
     name = "gazelle",
+)
+
+genrule(
+    name = "hello-cow",
+    srcs = [],
+    outs = ["greetings.txt"],
+    cmd = "./$(location @folks.cowsay//:bin/cowsay) 'Nix is pretty cool' > \"$@\"",
+    tools = ["@folks.cowsay//:bin/cowsay"],
 )
 
 exports_files(["default.nix"])

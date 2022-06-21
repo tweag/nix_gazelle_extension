@@ -1,6 +1,7 @@
-[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
-[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
-[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
-[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
-[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
-[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mdefault.nix
+[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mfolks/cool-kid/default.nix
+[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mfolks/cowsay/default.nix
+[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mfolks/i-need-a-friend/default.nix
+[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mfolks/leave-me-alone/nothing/to/see/here/officer/default.nix
+[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mfolks/lone-wolf/default.nix
+[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mfolks/the-one-all-know/default.nix
+[32mINF[0m [1mnix/gazelle/generate.go:56[0m[36m >[0m parsing nix file [36mfile=[0mfolks/we/need/to/go/deeper/default.nix
